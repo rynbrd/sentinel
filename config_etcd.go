@@ -8,7 +8,7 @@ import (
 
 const (
 	DefaultEtcdURI       = "http://172.17.42.1:4001/"
-	DefaultEtcdPrefix    = "beacon"
+	DefaultEtcdPrefix    = ""
 	DefaultEtcdTLSKey    = ""
 	DefaultEtcdTLSCert   = ""
 	DefaultEtcdTLSCACert = ""
