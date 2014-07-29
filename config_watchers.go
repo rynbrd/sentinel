@@ -109,11 +109,11 @@ func (cfg *WatcherConfig) SetYAML(tag string, data interface{}) bool {
 	}
 
 	cfg.Shell = false
-	if cmdValue, ok := yamlcfg.GetMapItem(data, "cmd"); ok {
+	if cmdValue, ok := yamlcfg.GetMapItem(data, "command"); ok {
 		if _, ok := cmdValue.([]interface{}); ok {
-			cfg.Cmd = yamlcfg.GetStringArray(data, "cmd", []string{})
+			cfg.Cmd = yamlcfg.GetStringArray(data, "command", []string{})
 		} else {
-			shellCmd := yamlcfg.GetString(data, "cmd", "")
+			shellCmd := yamlcfg.GetString(data, "command", "")
 			if shellCmd == "" {
 				cfg.Cmd = []string{}
 			} else {
