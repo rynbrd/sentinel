@@ -77,7 +77,9 @@ func NewTLSClient(uris []string, prefix string, logger *simplelog.Logger, tlsCer
 
 // Create a mapping rooted at the prefix.
 func (c *Client) nodeMapping(node *etcd.Node) map[string]interface{} {
-	parts := strings.Split(strings.Replace(strings.Trim(strings.TrimPrefix(node.Key, c.prefix), "/"), "-", "_", -1))
+	path := strings.Trim(strings.TrimPrefix(node.Key, c.prefix), "/")
+	path = strings.Replace(path, "-", "_", -1)
+	parts := strings.Split(path, "/")
 	base := parts[len(parts)-1]
 	dir := parts[:len(parts)-1]
 	mapping := map[string]interface{}{
