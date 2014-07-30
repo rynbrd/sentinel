@@ -4,6 +4,7 @@ import (
 	"github.com/coreos/go-etcd/etcd"
 	"gopkg.in/BlueDragonX/simplelog.v1"
 	"strings"
+	"time"
 )
 
 // A Listener waits for etcd key changes and sends watch events to its eventss.
@@ -65,5 +66,8 @@ func (w *Listener) Start(events []chan string) {
 // Stop a Listener.
 func (w *Listener) Stop() {
 	w.stop <- true
-	<-w.join
+	select {
+	case <-w.join:
+	case <-time.After(200 * time.Millisecond):
+	}
 }
