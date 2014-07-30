@@ -5,7 +5,6 @@ import (
 	"gopkg.in/BlueDragonX/simplelog.v1"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 )
 
@@ -46,15 +45,24 @@ func main() {
 		logger.Fatal("failed to create watch manager")
 	}
 
+	var exec []string
 	if len(cfg.Exec) > 0 {
-		// exec
-		logger.Notice("executing %s", strings.Join(cfg.Exec, ", "))
-		if err = manager.Execute(cfg.Exec); err != nil {
-			logger.Fatal("failed to execute: %s", err)
-		}
+		exec = cfg.Exec
 	} else {
-		// run
+		exec = []string{}
+		for name, _ := range manager.Watchers {
+			exec = append(exec, name)
+		}
+	}
 
+	// exec
+	logger.Notice("executing watchers")
+	if err = manager.Execute(cfg.Exec); err != nil {
+		logger.Fatal("failed to execute: %s", err)
+	}
+
+	if len(cfg.Exec) == 0 {
+		// run
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 		logger.Notice("starting")

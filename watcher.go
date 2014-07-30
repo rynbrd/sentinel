@@ -110,7 +110,7 @@ func (watcher *Watcher) Run(events chan string) {
 
 // Manage multiple watchers.
 type WatchManager struct {
-	watchers map[string]*Watcher
+	Watchers map[string]*Watcher
 	listeners map[string]*Listener
 	client *Client
 	logger *simplelog.Logger
@@ -126,7 +126,7 @@ func NewWatchManager(watchers []*Watcher, client *Client, logger *simplelog.Logg
 	}
 
 	for _, watcher := range watchers {
-		manager.watchers[watcher.Name()] = watcher
+		manager.Watchers[watcher.Name()] = watcher
 		for _, key := range watcher.watch {
 			if _, have := manager.listeners[key]; !have {
 				manager.listeners[key] = NewListener(watcher.client.prefix, key, client, logger)
@@ -140,7 +140,7 @@ func NewWatchManager(watchers []*Watcher, client *Client, logger *simplelog.Logg
 func (manager *WatchManager) Execute(watcherNames []string) error {
 	watchers := []*Watcher{}
 	for _, name := range watcherNames {
-		if watcher, ok := manager.watchers[name]; ok {
+		if watcher, ok := manager.Watchers[name]; ok {
 			watchers = append(watchers, watcher)
 		} else {
 			return errors.New(fmt.Sprintf("invalid watcher '%s'", name))
@@ -167,7 +167,7 @@ func (manager *WatchManager) Start() {
 		return events
 	}
 
-	for _, watcher := range manager.watchers {
+	for _, watcher := range manager.Watchers {
 		for _, key := range watcher.watch {
 			if _, ok := manager.listeners[key]; ok {
 				events := addChan(key, watcher.Name())
