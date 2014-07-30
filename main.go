@@ -57,7 +57,7 @@ func main() {
 
 	// exec
 	logger.Notice("executing watchers")
-	if err = manager.Execute(cfg.Exec); err != nil {
+	if err = manager.Execute(exec); err != nil {
 		logger.Fatal("failed to execute: %s", err)
 	}
 
