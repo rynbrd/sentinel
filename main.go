@@ -50,7 +50,7 @@ func main() {
 		exec = cfg.Exec
 	} else {
 		exec = []string{}
-		for name, _ := range manager.Watchers {
+		for name := range manager.Watchers {
 			exec = append(exec, name)
 		}
 	}

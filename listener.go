@@ -8,12 +8,12 @@ import (
 
 // A Listener waits for etcd key changes and sends watch events to its eventss.
 type Listener struct {
-	Key string
+	Key    string
 	prefix string
 	client *Client
 	logger *simplelog.Logger
-	stop chan bool
-	join chan bool
+	stop   chan bool
+	join   chan bool
 }
 
 // Create a new watcher. The watcher immediately begins monitoring etcd for changes.
@@ -41,13 +41,13 @@ func (w *Listener) Start(events []chan string) {
 			}
 			event := strings.Trim(strings.TrimPrefix(response.Node.Key, w.prefix), "/")
 			for _, eventChan := range events {
-				eventChan <-event
+				eventChan <- event
 			}
 		}
 		for _, eventChan := range events {
 			close(eventChan)
 		}
-		w.join <-true
+		w.join <- true
 	}()
 
 	go func() {
@@ -64,6 +64,6 @@ func (w *Listener) Start(events []chan string) {
 
 // Stop a Listener.
 func (w *Listener) Stop() {
-	w.stop <-true
+	w.stop <- true
 	<-w.join
 }

@@ -8,7 +8,6 @@ import (
 	"text/template"
 )
 
-
 type Template struct {
 	Src  string
 	Dest string

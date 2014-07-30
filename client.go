@@ -46,10 +46,10 @@ func nodeValue(node *etcd.Node) interface{} {
 }
 
 // etcd client wrapper.
-type Client struct{
-	client   *etcd.Client
-	logger   *simplelog.Logger
-	prefix   string
+type Client struct {
+	client *etcd.Client
+	logger *simplelog.Logger
+	prefix string
 }
 
 // Internal client creation.
@@ -86,7 +86,7 @@ func (c *Client) nodeMapping(node *etcd.Node) map[string]interface{} {
 		base: nodeValue(node),
 	}
 
-	for i := len(dir)-1; i >= 0; i-- {
+	for i := len(dir) - 1; i >= 0; i-- {
 		mapping = map[string]interface{}{
 			parts[i]: mapping,
 		}

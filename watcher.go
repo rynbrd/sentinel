@@ -10,13 +10,13 @@ import (
 
 // A watcher renders templates and executes command when key changes are detected.
 type Watcher struct {
-	name      string
+	name     string
 	watch    []string
 	context  []string
-	renderer  *Renderer
-	command   []string
-	client    *Client
-	logger    *simplelog.Logger
+	renderer *Renderer
+	command  []string
+	client   *Client
+	logger   *simplelog.Logger
 }
 
 // Create a new watcher.
@@ -110,10 +110,10 @@ func (watcher *Watcher) Run(events chan string) {
 
 // Manage multiple watchers.
 type WatchManager struct {
-	Watchers map[string]*Watcher
+	Watchers  map[string]*Watcher
 	listeners map[string]*Listener
-	client *Client
-	logger *simplelog.Logger
+	client    *Client
+	logger    *simplelog.Logger
 }
 
 // Create a new watch manager.

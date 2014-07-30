@@ -7,8 +7,7 @@ import (
 	"gopkg.in/BlueDragonX/yamlcfg.v1"
 )
 
-const (
-)
+const ()
 
 // Watcher template configuration.
 type TemplateConfig struct {
@@ -66,7 +65,7 @@ func (cfg *TemplatesConfig) Validate() []error {
 
 // Watcher configuration.
 type WatcherConfig struct {
-	Name	  string
+	Name      string
 	Watch     []string
 	Context   []string
 	Templates TemplatesConfig
@@ -172,7 +171,7 @@ func (cfg *WatchersConfig) Validate() []error {
 
 // Create a new watch manager from the configuration.
 func (cfg *WatchersConfig) CreateWatchManager(client *Client, logger *simplelog.Logger) (manager *WatchManager, err error) {
-	watchers := []*Watcher{} 
+	watchers := []*Watcher{}
 	for _, watcherCfg := range *cfg {
 		watchers = append(watchers, watcherCfg.CreateWatcher(client, logger))
 	}
