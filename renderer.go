@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/BlueDragonX/go-hash"
+	"gopkg.in/BlueDragonX/go-hash.v1"
 	"gopkg.in/BlueDragonX/simplelog.v1"
 	"io/ioutil"
 	"os"
