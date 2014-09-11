@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+const (
+	WatchRetry = 5
+)
+
 // A Listener waits for etcd key changes and sends watch events to its eventss.
 type Listener struct {
 	Key    string
@@ -32,34 +36,46 @@ func NewListener(prefix, key string, client *Client, logger *simplelog.Logger) *
 // Start the listener. Emit the name of the key to the provided channel when it changes.
 func (w *Listener) Start(events []chan string) {
 	key := joinPaths(w.prefix, w.Key)
-	responses := make(chan *etcd.Response)
 
 	go func() {
+Loop:
 		for {
-			response, open := <-responses
-			if !open {
-				break
-			}
-			event := strings.Trim(strings.TrimPrefix(response.Node.Key, w.prefix), "/")
-			for _, eventChan := range events {
-				eventChan <- event
+			join := make(chan bool)
+			responses := make(chan *etcd.Response)
+			go func() {
+				for {
+					response, open := <-responses
+					if !open {
+						break
+					}
+					event := strings.Trim(strings.TrimPrefix(response.Node.Key, w.prefix), "/")
+					for _, eventChan := range events {
+						eventChan <- event
+					}
+				}
+				join <- true
+				close(join)
+			}()
+
+			_, err := w.client.client.Watch(key, 0, false, responses, w.stop)
+			<-join
+
+			if err == etcd.ErrWatchStoppedByUser {
+				break Loop
+			} else {
+				w.logger.Error("watch on %s failed: %s", key, err)
+				w.logger.Info("retrying in %ds", WatchRetry)
+				select {
+					case <-w.stop:
+						break Loop
+					case <-time.After(WatchRetry * time.Second):
+				}
 			}
 		}
 		for _, eventChan := range events {
 			close(eventChan)
 		}
 		w.join <- true
-	}()
-
-	go func() {
-		for {
-			_, err := w.client.client.Watch(key, 0, false, responses, w.stop)
-			if err == etcd.ErrWatchStoppedByUser {
-				break
-			} else {
-				w.logger.Error("watch on %s failed: %s", key, err)
-			}
-		}
 	}()
 }
 
