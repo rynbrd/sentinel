@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"gopkg.in/BlueDragonX/go-hash.v1"
 	"gopkg.in/BlueDragonX/simplelog.v1"
 	"io/ioutil"
@@ -16,9 +17,16 @@ type Template struct {
 
 // Render the template to a temporary and return true if the original was changed.
 func (t *Template) Render(context map[string]interface{}) (changed bool, err error) {
-	// create a temp file to write to
+	// create the destination directory
+	dir := filepath.Dir(t.Dest)
+	if err = os.MkdirAll(dir, 0777); err != nil {
+		return
+	}
+
+	// create a temp file to write
 	var tmp *os.File
-	if tmp, err = ioutil.TempFile("", "sentinel"); err != nil {
+	prefix := fmt.Sprintf(".%s-", filepath.Base(t.Dest))
+	if tmp, err = ioutil.TempFile(dir, prefix); err != nil {
 		return
 	}
 	defer func() {
@@ -48,11 +56,8 @@ func (t *Template) Render(context map[string]interface{}) (changed bool, err err
 	}
 
 	// replace the old file with the new one
-	dir := filepath.Dir(t.Dest)
-	if err = os.MkdirAll(dir, 0777); err == nil {
-		if err = os.Rename(tmp.Name(), t.Dest); err == nil {
-			changed = true
-		}
+	if err = os.Rename(tmp.Name(), t.Dest); err == nil {
+		changed = true
 	}
 	return
 }

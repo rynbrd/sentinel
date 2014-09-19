@@ -1,9 +1,13 @@
-## v1.1 - Bug Fixes
+## v1.0.2 - Bug Fixes
+* Renderer templates in temporary files under the destination directory. Fixes
+  cross-volume link error.
+
+## v1.0.1 - Bug Fixes
 + Execute all watchers on start when run as a service.
 * Clean all key path elements replacing `-` with `_`.
 * Fix bug which causes hang on stop forcing the use of a SIGKILL.
 
-## v1.0 - Initial Release
+## v1.0.0 - Initial Release
 + Trigger template rendering and command execution.
 + Watch and retrieve context for multiple keys.
 + Only execute command when rendered templates change.
