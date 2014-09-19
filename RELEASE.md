@@ -1,6 +1,7 @@
-## v1.0.2 - Bug Fixes
+## v1.0.2 - Template Bug Fixes
 * Renderer templates in temporary files under the destination directory. Fixes
   cross-volume link error.
+* Fail template rendering if destination hash generation fails.
 
 ## v1.0.1 - Bug Fixes
 + Execute all watchers on start when run as a service.

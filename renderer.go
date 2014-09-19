@@ -47,12 +47,17 @@ func (t *Template) Render(context map[string]interface{}) (changed bool, err err
 
 	// return if the old and new files are the same
 	var destHash string
+	if destHash, err = hash.File(t.Dest); err != nil {
+		return
+	}
+
 	var tmpHash string
-	if destHash, err = hash.File(t.Dest); err == nil {
-		tmpHash, err = hash.File(tmp.Name())
-		if err != nil || destHash == tmpHash {
-			return
-		}
+	if tmpHash, err = hash.File(tmp.Name()); err != nil {
+		return
+	}
+
+	if destHash == tmpHash {
+		return
 	}
 
 	// replace the old file with the new one
