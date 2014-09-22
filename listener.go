@@ -38,7 +38,7 @@ func (w *Listener) Start(events []chan string) {
 	key := joinPaths(w.prefix, w.Key)
 
 	go func() {
-Loop:
+	Loop:
 		for {
 			join := make(chan bool)
 			responses := make(chan *etcd.Response)
@@ -66,9 +66,9 @@ Loop:
 				w.logger.Error("watch on %s failed: %s", key, err)
 				w.logger.Info("retrying in %ds", WatchRetry)
 				select {
-					case <-w.stop:
-						break Loop
-					case <-time.After(WatchRetry * time.Second):
+				case <-w.stop:
+					break Loop
+				case <-time.After(WatchRetry * time.Second):
 				}
 			}
 		}
