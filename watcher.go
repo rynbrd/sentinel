@@ -148,9 +148,7 @@ func (manager *WatchManager) Execute(watcherNames []string) error {
 	}
 
 	for _, watcher := range watchers {
-		if err := watcher.Execute(); err != nil {
-			return err
-		}
+		watcher.Execute()
 	}
 	return nil
 }
