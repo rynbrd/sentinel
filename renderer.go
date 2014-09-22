@@ -7,12 +7,33 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
 type Template struct {
-	Src  string
-	Dest string
+	Src    string
+	Dest   string
+	logger *simplelog.Logger
+}
+
+func NewTemplate(src, dest string, logger *simplelog.Logger) Template {
+	return Template{src, dest, logger}
+}
+
+// Return true if one file differs from another.
+func (t *Template) differs(fileA, fileB string) bool {
+	var err error
+	var hashA, hashB string
+	if hashA, err = hash.File(fileA); err != nil {
+		t.logger.Warn("unable to hash %s", fileA)
+		return true
+	}
+	if hashB, err = hash.File(fileB); err != nil {
+		t.logger.Warn("unable to hash %s", fileB)
+		return true
+	}
+	return hashA != hashB
 }
 
 // Render the template to a temporary and return true if the original was changed.
@@ -34,10 +55,15 @@ func (t *Template) Render(context map[string]interface{}) (changed bool, err err
 		os.Remove(tmp.Name())
 	}()
 
+	// add functions to the templates
+	funcs := template.FuncMap{
+		"replace": strings.Replace,
+	}
+
 	// render the template to the temp file
 	var tpl *template.Template
 	name := filepath.Base(t.Src)
-	if tpl, err = template.New(name).ParseFiles(t.Src); err != nil {
+	if tpl, err = template.New(name).Funcs(funcs).ParseFiles(t.Src); err != nil {
 		return
 	}
 	if err = tpl.Execute(tmp, context); err != nil {
@@ -46,24 +72,13 @@ func (t *Template) Render(context map[string]interface{}) (changed bool, err err
 	tmp.Close()
 
 	// return if the old and new files are the same
-	var destHash string
-	if destHash, err = hash.File(t.Dest); err != nil {
-		return
-	}
-
-	var tmpHash string
-	if tmpHash, err = hash.File(tmp.Name()); err != nil {
-		return
-	}
-
-	if destHash == tmpHash {
+	changed = t.differs(t.Dest, tmp.Name())
+	if !changed {
 		return
 	}
 
 	// replace the old file with the new one
-	if err = os.Rename(tmp.Name(), t.Dest); err == nil {
-		changed = true
-	}
+	err = os.Rename(tmp.Name(), t.Dest)
 	return
 }
 

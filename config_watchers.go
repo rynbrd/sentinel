@@ -78,7 +78,7 @@ func (cfg *WatcherConfig) CreateWatcher(client *Client, logger *simplelog.Logger
 	// create renderer
 	templates := []Template{}
 	for _, templateCfg := range cfg.Templates {
-		templates = append(templates, Template{templateCfg.Src, templateCfg.Dest})
+		templates = append(templates, NewTemplate(templateCfg.Src, templateCfg.Dest, logger))
 	}
 	renderer := NewRenderer(templates, logger)
 
