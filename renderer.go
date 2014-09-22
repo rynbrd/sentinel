@@ -52,7 +52,9 @@ func (t *Template) Render(context map[string]interface{}) (changed bool, err err
 	}
 	defer func() {
 		tmp.Close()
-		os.Remove(tmp.Name())
+		if !changed || err != nil {
+			os.Remove(tmp.Name())
+		}
 	}()
 
 	// add functions to the templates
