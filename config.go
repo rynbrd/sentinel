@@ -61,6 +61,9 @@ func (cfg *Config) Validate() []error {
 	errs := []error{}
 	errs = append(errs, cfg.Etcd.Validate()...)
 	errs = append(errs, cfg.Logging.Validate()...)
+	for _, watcher := range cfg.Watchers {
+		errs = append(errs, watcher.Validate()...)
+	}
 	return errs
 }
 
