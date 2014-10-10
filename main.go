@@ -32,6 +32,12 @@ func main() {
 	}
 
 	// begin startup sequence
+	if cfg.Logging.Syslog {
+		if logger, err = simplelog.NewLogger(simplelog.SYSLOG, "sentinel"); err != nil {
+			fmt.Println("failed to create syslog logger:", err)
+			os.Exit(1)
+		}
+	}
 	logger.SetLevel(cfg.Logging.Level)
 
 	var client *Client
