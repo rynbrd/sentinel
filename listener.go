@@ -57,7 +57,7 @@ func (w *Listener) Start(events []chan string) {
 				close(join)
 			}()
 
-			_, err := w.client.client.Watch(key, 0, false, responses, w.stop)
+			_, err := w.client.client.Watch(key, 0, true, responses, w.stop)
 			<-join
 
 			if err == etcd.ErrWatchStoppedByUser {
