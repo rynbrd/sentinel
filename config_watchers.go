@@ -7,8 +7,6 @@ import (
 	"gopkg.in/BlueDragonX/yamlcfg.v1"
 )
 
-const ()
-
 // Watcher template configuration.
 type TemplateConfig struct {
 	Src  string
@@ -66,6 +64,7 @@ func (cfg *TemplatesConfig) Validate() []error {
 // Watcher configuration.
 type WatcherConfig struct {
 	Name      string
+	Prefix    string
 	Watch     []string
 	Context   []string
 	Templates TemplatesConfig
@@ -93,13 +92,14 @@ func (cfg *WatcherConfig) CreateWatcher(client *Client, logger *simplelog.Logger
 	}
 
 	// create watcher
-	return NewWatcher(cfg.Name, cfg.Watch, cfg.Context, renderer, command, client, logger)
+	return NewWatcher(cfg.Name, cfg.Prefix, cfg.Watch, cfg.Context, renderer, command, client, logger)
 }
 
 // Parse the YAML tree into the object.
 func (cfg *WatcherConfig) SetYAML(tag string, data interface{}) bool {
 	yamlcfg.AssertIsMap(tag, data)
 	cfg.Name = tag
+	cfg.Prefix = yamlcfg.GetString(data, "prefix", "")
 	cfg.Watch = yamlcfg.GetStringArray(data, "watch", []string{})
 	cfg.Context = yamlcfg.GetStringArray(data, "context", []string{})
 

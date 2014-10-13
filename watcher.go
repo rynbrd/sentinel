@@ -11,6 +11,7 @@ import (
 // A watcher renders templates and executes command when key changes are detected.
 type Watcher struct {
 	name     string
+	prefix   string
 	watch    []string
 	context  []string
 	renderer *Renderer
@@ -20,9 +21,13 @@ type Watcher struct {
 }
 
 // Create a new watcher.
-func NewWatcher(name string, watch, context []string, renderer *Renderer, command []string, client *Client, logger *simplelog.Logger) *Watcher {
+func NewWatcher(name, prefix string, watch, context []string, renderer *Renderer, command []string, client *Client, logger *simplelog.Logger) *Watcher {
+	if prefix == "" {
+		prefix = client.prefix
+	}
 	return &Watcher{
 		name,
+		prefix,
 		watch,
 		context,
 		renderer,
@@ -69,12 +74,13 @@ func (watcher *Watcher) Name() string {
 
 // Execute the watcher as if an event was receieved.
 func (watcher *Watcher) Execute() error {
-	context, err := watcher.client.GetMaps(watcher.context, true)
+	context, err := watcher.client.GetMaps(watcher.prefix, watcher.context, true)
 	if err != nil {
 		watcher.logger.Error("%s failed to retrieve context: %s", watcher.Name(), err)
 		return err
 	}
 
+	watcher.logger.Debug("context: %v\n", context)
 	changed := true
 	if watcher.renderer != nil {
 		changed, err = watcher.renderer.Render(context)
@@ -129,7 +135,7 @@ func NewWatchManager(watchers []*Watcher, client *Client, logger *simplelog.Logg
 		manager.Watchers[watcher.Name()] = watcher
 		for _, key := range watcher.watch {
 			if _, have := manager.listeners[key]; !have {
-				manager.listeners[key] = NewListener(watcher.client.prefix, key, client, logger)
+				manager.listeners[key] = NewListener(watcher.prefix, key, client, logger)
 			}
 		}
 	}
