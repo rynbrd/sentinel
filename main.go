@@ -31,14 +31,28 @@ func main() {
 		logger.Fatal("could not process config file")
 	}
 
-	// begin startup sequence
+	// replace the logger
+	loggerDest := 0
+	if cfg.Logging.Syslog {
+		loggerDest |= simplelog.SYSLOG
+	}
+	if cfg.Logging.Console {
+		loggerDest |= simplelog.CONSOLE
+	}
+
+	oldLogger := logger
+	if logger, err = simplelog.NewLogger(loggerDest, "sentinel"); err != nil {
+		oldLogger.Fatal("failed to create logger:", err)
+	}
 	logger.SetLevel(cfg.Logging.Level)
 
+	// begin startup sequence
 	var client *Client
 	client, err = cfg.Etcd.CreateClient(logger)
 	if err != nil {
 		logger.Fatal("failed to create client: %s", err)
 	}
+	oldLogger.Close()
 
 	manager, err := cfg.Watchers.CreateWatchManager(client, logger)
 	if err != nil {
