@@ -1,3 +1,12 @@
+## v1.0.5 - Logger Bug Fix
+* Fix logger output setup on start.
+
+## v1.0.4 - Watcher Bug Fix
+* Validate watcher configuration.
+
+## v1.0.3 - Watcher Bugs
+* Do not exit when a watcher fails.
+
 ## v1.0.2 - Template Bug Fixes
 * Renderer templates in temporary files under the destination directory. Fixes
   cross-volume link error.
