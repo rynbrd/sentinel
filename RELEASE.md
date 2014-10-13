@@ -1,3 +1,7 @@
+## v1.1.0 - Watcher Prefixes
++ Add watcher specific prefixes.
++ Allow watching on directories.
+
 ## v1.0.5 - Logger Bug Fix
 * Fix logger output setup on start.
 
