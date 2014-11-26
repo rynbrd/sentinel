@@ -91,6 +91,10 @@ type Renderer struct {
 }
 
 func NewRenderer(templates []Template, logger *simplelog.Logger) *Renderer {
+	if len(templates) == 0 {
+		return nil
+	}
+
 	item := &Renderer{
 		templates,
 		logger,
