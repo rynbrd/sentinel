@@ -1,3 +1,6 @@
+## v1.1.1
+* Execute command when no templates exist.
+
 ## v1.1.0 - Watcher Prefixes
 + Add watcher specific prefixes.
 + Allow watching on directories.
