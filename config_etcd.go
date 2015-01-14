@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"gopkg.in/BlueDragonX/simplelog.v1"
 	"gopkg.in/BlueDragonX/yamlcfg.v1"
 )
 
@@ -35,11 +34,11 @@ func DefaultEtcdConfig() EtcdConfig {
 }
 
 // Create a client from the config.
-func (cfg *EtcdConfig) CreateClient(logger *simplelog.Logger) (client *Client, err error) {
+func (cfg *EtcdConfig) CreateClient() (client *Client, err error) {
 	if cfg.IsTLS() {
-		client, err = NewTLSClient(cfg.URIs, cfg.Prefix, logger, cfg.TLSCert, cfg.TLSKey, cfg.TLSCACert)
+		client, err = NewTLSClient(cfg.URIs, cfg.Prefix, cfg.TLSCert, cfg.TLSKey, cfg.TLSCACert)
 	} else {
-		client = NewClient(cfg.URIs, cfg.Prefix, logger)
+		client = NewClient(cfg.URIs, cfg.Prefix)
 	}
 	return
 }

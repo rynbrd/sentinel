@@ -8,11 +8,14 @@ import (
 	"syscall"
 )
 
+var (
+	logger *simplelog.Logger
+)
+
 // Run the app.
 func main() {
 	// initialize logging
 	var err error
-	var logger *simplelog.Logger
 	if logger, err = simplelog.NewLogger(simplelog.CONSOLE, "sentinel"); err != nil {
 		fmt.Println("failed to create logger:", err)
 		os.Exit(1)
@@ -48,13 +51,13 @@ func main() {
 
 	// begin startup sequence
 	var client *Client
-	client, err = cfg.Etcd.CreateClient(logger)
+	client, err = cfg.Etcd.CreateClient()
 	if err != nil {
 		logger.Fatal("failed to create client: %s", err)
 	}
 	oldLogger.Close()
 
-	manager, err := cfg.Watchers.CreateWatchManager(client, logger)
+	manager, err := cfg.Watchers.CreateWatchManager(client)
 	if err != nil {
 		logger.Fatal("failed to create watch manager")
 	}

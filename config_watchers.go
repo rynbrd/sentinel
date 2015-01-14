@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"gopkg.in/BlueDragonX/simplelog.v1"
 	"gopkg.in/BlueDragonX/yamlcfg.v1"
 )
 
@@ -73,15 +72,15 @@ type WatcherConfig struct {
 }
 
 // Create a watcher from this config object.
-func (cfg *WatcherConfig) CreateWatcher(client *Client, logger *simplelog.Logger) *Watcher {
+func (cfg *WatcherConfig) CreateWatcher(client *Client) *Watcher {
 	// create renderer
 	templates := []Template{}
 	for _, templateCfg := range cfg.Templates {
-		templates = append(templates, NewTemplate(templateCfg.Src, templateCfg.Dest, logger))
+		templates = append(templates, NewTemplate(templateCfg.Src, templateCfg.Dest))
 	}
 	var renderer *Renderer
 	if len(templates) > 0 {
-		renderer = NewRenderer(templates, logger)
+		renderer = NewRenderer(templates)
 	}
 
 	// create command
@@ -95,7 +94,7 @@ func (cfg *WatcherConfig) CreateWatcher(client *Client, logger *simplelog.Logger
 	}
 
 	// create watcher
-	return NewWatcher(cfg.Name, cfg.Prefix, cfg.Watch, cfg.Context, renderer, command, client, logger)
+	return NewWatcher(cfg.Name, cfg.Prefix, cfg.Watch, cfg.Context, renderer, command, client)
 }
 
 // Parse the YAML tree into the object.
@@ -173,10 +172,10 @@ func (cfg *WatchersConfig) Validate() []error {
 }
 
 // Create a new watch manager from the configuration.
-func (cfg *WatchersConfig) CreateWatchManager(client *Client, logger *simplelog.Logger) (manager *WatchManager, err error) {
+func (cfg *WatchersConfig) CreateWatchManager(client *Client) (manager *WatchManager, err error) {
 	watchers := []*Watcher{}
 	for _, watcherCfg := range *cfg {
-		watchers = append(watchers, watcherCfg.CreateWatcher(client, logger))
+		watchers = append(watchers, watcherCfg.CreateWatcher(client))
 	}
-	return NewWatchManager(watchers, client, logger), nil
+	return NewWatchManager(watchers, client), nil
 }

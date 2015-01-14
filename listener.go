@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/coreos/go-etcd/etcd"
-	"gopkg.in/BlueDragonX/simplelog.v1"
 	"strings"
 	"time"
 )
@@ -16,18 +15,16 @@ type Listener struct {
 	Key    string
 	prefix string
 	client *Client
-	logger *simplelog.Logger
 	stop   chan bool
 	join   chan bool
 }
 
 // Create a new listener. The listener immediately begins monitoring etcd for changes.
-func NewListener(prefix, key string, client *Client, logger *simplelog.Logger) *Listener {
+func NewListener(prefix, key string, client *Client) *Listener {
 	return &Listener{
 		key,
 		prefix,
 		client,
-		logger,
 		make(chan bool),
 		make(chan bool),
 	}
@@ -36,7 +33,7 @@ func NewListener(prefix, key string, client *Client, logger *simplelog.Logger) *
 // Start the listener. Emit the name of the key to the provided channel when it changes.
 func (w *Listener) Start(events []chan string) {
 	key := joinPaths(w.prefix, w.Key)
-	w.logger.Debug("watching '%s'", key)
+	logger.Debug("watching '%s'", key)
 
 	go func() {
 	Loop:
@@ -49,7 +46,7 @@ func (w *Listener) Start(events []chan string) {
 					if !open {
 						break
 					}
-					w.logger.Debug("key '%s' changed", response.Node.Key)
+					logger.Debug("key '%s' changed", response.Node.Key)
 					event := strings.Trim(strings.TrimPrefix(response.Node.Key, w.prefix), "/")
 					for _, eventChan := range events {
 						eventChan <- event
@@ -65,8 +62,8 @@ func (w *Listener) Start(events []chan string) {
 			if err == etcd.ErrWatchStoppedByUser {
 				break Loop
 			} else {
-				w.logger.Error("watch on '%s' failed: %s", key, err)
-				w.logger.Info("retrying in %ds", WatchRetry)
+				logger.Error("watch on '%s' failed: %s", key, err)
+				logger.Info("retrying in %ds", WatchRetry)
 				select {
 				case <-w.stop:
 					break Loop

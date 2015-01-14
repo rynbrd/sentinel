@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"gopkg.in/BlueDragonX/simplelog.v1"
 	"os/exec"
 	"strings"
 )
@@ -17,11 +16,10 @@ type Watcher struct {
 	renderer *Renderer
 	command  []string
 	client   *Client
-	logger   *simplelog.Logger
 }
 
 // Create a new watcher.
-func NewWatcher(name, prefix string, watch, context []string, renderer *Renderer, command []string, client *Client, logger *simplelog.Logger) *Watcher {
+func NewWatcher(name, prefix string, watch, context []string, renderer *Renderer, command []string, client *Client) *Watcher {
 	if prefix == "" {
 		prefix = client.prefix
 	}
@@ -33,14 +31,13 @@ func NewWatcher(name, prefix string, watch, context []string, renderer *Renderer
 		renderer,
 		command,
 		client,
-		logger,
 	}
 }
 
 // Run the watcher command.
 func (watcher *Watcher) runCommand() error {
 	if len(watcher.command) == 0 {
-		watcher.logger.Debug("%s has no command, skipping", watcher.name)
+		logger.Debug("%s has no command, skipping", watcher.name)
 		return nil
 	}
 
@@ -48,19 +45,19 @@ func (watcher *Watcher) runCommand() error {
 	cmdArgs := watcher.command[1:]
 	command := exec.Command(cmdName, cmdArgs...)
 
-	watcher.logger.Debug("%s calling command", watcher.name)
+	logger.Debug("%s calling command", watcher.name)
 	out, err := command.CombinedOutput()
 	if err != nil {
-		watcher.logger.Error("%s cmd failed: %s", watcher.name, err)
+		logger.Error("%s cmd failed: %s", watcher.name, err)
 	}
 	outStr := string(out)
 	if outStr != "" {
 		lines := strings.Split(outStr, "\n")
 		for _, line := range lines {
 			if err == nil {
-				watcher.logger.Debug("%s cmd: %s", watcher.name, line)
+				logger.Debug("%s cmd: %s", watcher.name, line)
 			} else {
-				watcher.logger.Warn("%s cmd: %s", watcher.name, line)
+				logger.Warn("%s cmd: %s", watcher.name, line)
 			}
 		}
 	}
@@ -76,16 +73,16 @@ func (watcher *Watcher) Name() string {
 func (watcher *Watcher) Execute() error {
 	context, err := watcher.client.GetMaps(watcher.prefix, watcher.context, true)
 	if err != nil {
-		watcher.logger.Error("%s failed to retrieve context: %s", watcher.Name(), err)
+		logger.Error("%s failed to retrieve context: %s", watcher.Name(), err)
 		return err
 	}
 
-	watcher.logger.Debug("context: %v\n", context)
+	logger.Debug("context: %v\n", context)
 	changed := true
 	if watcher.renderer != nil {
 		changed, err = watcher.renderer.Render(context)
 		if err != nil {
-			watcher.logger.Error("%s failed to render: %s", watcher.Name(), err)
+			logger.Error("%s failed to render: %s", watcher.Name(), err)
 			return err
 		}
 	}
@@ -93,12 +90,12 @@ func (watcher *Watcher) Execute() error {
 	if changed {
 		err = watcher.runCommand()
 		if err != nil {
-			watcher.logger.Error("%s failed to run command: %s", watcher.Name(), err)
+			logger.Error("%s failed to run command: %s", watcher.Name(), err)
 			return err
 		}
-		watcher.logger.Info("%s executed", watcher.Name())
+		logger.Info("%s executed", watcher.Name())
 	} else {
-		watcher.logger.Info("%s skipped execution", watcher.Name())
+		logger.Info("%s skipped execution", watcher.Name())
 	}
 	return nil
 }
@@ -119,23 +116,21 @@ type WatchManager struct {
 	Watchers  map[string]*Watcher
 	listeners map[string]*Listener
 	client    *Client
-	logger    *simplelog.Logger
 }
 
 // Create a new watch manager.
-func NewWatchManager(watchers []*Watcher, client *Client, logger *simplelog.Logger) *WatchManager {
+func NewWatchManager(watchers []*Watcher, client *Client) *WatchManager {
 	manager := &WatchManager{
 		make(map[string]*Watcher),
 		make(map[string]*Listener),
 		client,
-		logger,
 	}
 
 	for _, watcher := range watchers {
 		manager.Watchers[watcher.Name()] = watcher
 		for _, key := range watcher.watch {
 			if _, have := manager.listeners[key]; !have {
-				manager.listeners[key] = NewListener(watcher.prefix, key, client, logger)
+				manager.listeners[key] = NewListener(watcher.prefix, key, client)
 			}
 		}
 	}

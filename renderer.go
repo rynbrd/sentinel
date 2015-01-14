@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"gopkg.in/BlueDragonX/go-hash.v1"
-	"gopkg.in/BlueDragonX/simplelog.v1"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -14,11 +13,10 @@ import (
 type Template struct {
 	Src    string
 	Dest   string
-	logger *simplelog.Logger
 }
 
-func NewTemplate(src, dest string, logger *simplelog.Logger) Template {
-	return Template{src, dest, logger}
+func NewTemplate(src, dest string) Template {
+	return Template{src, dest}
 }
 
 // Return true if one file differs from another.
@@ -26,11 +24,11 @@ func (t *Template) differs(fileA, fileB string) bool {
 	var err error
 	var hashA, hashB string
 	if hashA, err = hash.File(fileA); err != nil {
-		t.logger.Warn("unable to hash %s", fileA)
+		logger.Warn("unable to hash %s", fileA)
 		return true
 	}
 	if hashB, err = hash.File(fileB); err != nil {
-		t.logger.Warn("unable to hash %s", fileB)
+		logger.Warn("unable to hash %s", fileB)
 		return true
 	}
 	return hashA != hashB
@@ -87,13 +85,11 @@ func (t *Template) Render(context map[string]interface{}) (changed bool, err err
 // A renderer generates files from a collection of templates.
 type Renderer struct {
 	templates []Template
-	logger    *simplelog.Logger
 }
 
-func NewRenderer(templates []Template, logger *simplelog.Logger) *Renderer {
+func NewRenderer(templates []Template) *Renderer {
 	item := &Renderer{
 		templates,
-		logger,
 	}
 	return item
 }
@@ -105,9 +101,9 @@ func (renderer *Renderer) Render(context map[string]interface{}) (changed bool, 
 			return
 		}
 		if oneChanged {
-			renderer.logger.Debug("template '%s' rendered to '%s'", template.Src, template.Dest)
+			logger.Debug("template '%s' rendered to '%s'", template.Src, template.Dest)
 		} else {
-			renderer.logger.Debug("template '%s' did not change", template.Dest)
+			logger.Debug("template '%s' did not change", template.Dest)
 		}
 		changed = changed || oneChanged
 	}

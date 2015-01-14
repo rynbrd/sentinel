@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/peterbourgon/mergemap"
-	"gopkg.in/BlueDragonX/simplelog.v1"
 	"strings"
 )
 
@@ -48,29 +47,27 @@ func nodeValue(node *etcd.Node) interface{} {
 // etcd client wrapper.
 type Client struct {
 	client *etcd.Client
-	logger *simplelog.Logger
 	prefix string
 }
 
 // Internal client creation.
-func newClient(etcdClient *etcd.Client, logger *simplelog.Logger, prefix string) *Client {
+func newClient(etcdClient *etcd.Client, prefix string) *Client {
 	return &Client{
 		etcdClient,
-		logger,
 		makePrefix(prefix),
 	}
 }
 
 // Create a new client.
-func NewClient(uris []string, prefix string, logger *simplelog.Logger) *Client {
-	return newClient(etcd.NewClient(uris), logger, prefix)
+func NewClient(uris []string, prefix string) *Client {
+	return newClient(etcd.NewClient(uris), prefix)
 }
 
 // Create a new client with TLS enabled.
-func NewTLSClient(uris []string, prefix string, logger *simplelog.Logger, tlsCert string, tlsKey string, tlsCaCert string) (client *Client, err error) {
+func NewTLSClient(uris []string, prefix string, tlsCert string, tlsKey string, tlsCaCert string) (client *Client, err error) {
 	var etcdClient *etcd.Client
 	if etcdClient, err = etcd.NewTLSClient(uris, tlsCert, tlsKey, tlsCaCert); err == nil {
-		client = newClient(etcdClient, logger, prefix)
+		client = newClient(etcdClient, prefix)
 	}
 	return
 }
@@ -99,10 +96,10 @@ func (c *Client) nodeMapping(prefix string, node *etcd.Node) map[string]interfac
 func (c *Client) GetMap(prefix, key string, recursive bool) (map[string]interface{}, error) {
 	key = joinPaths(prefix, key)
 	if response, err := c.client.Get(key, false, recursive); err == nil {
-		c.logger.Debug("get key '%s': %v", key, response.Node)
+		logger.Debug("get key '%s': %v", key, response.Node)
 		return c.nodeMapping(prefix, response.Node), nil
 	} else {
-		c.logger.Debug("get key '%s': %s", key, err)
+		logger.Debug("get key '%s': %s", key, err)
 		return nil, err
 	}
 }
