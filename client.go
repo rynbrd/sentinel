@@ -96,10 +96,10 @@ func (c *Client) nodeMapping(prefix string, node *etcd.Node) map[string]interfac
 func (c *Client) GetMap(prefix, key string, recursive bool) (map[string]interface{}, error) {
 	key = joinPaths(prefix, key)
 	if response, err := c.client.Get(key, false, recursive); err == nil {
-		logger.Debug("get key '%s': %v", key, response.Node)
+		logger.Debugf("get key '%s': %v", key, response.Node)
 		return c.nodeMapping(prefix, response.Node), nil
 	} else {
-		logger.Debug("get key '%s': %s", key, err)
+		logger.Debugf("get key '%s': %s", key, err)
 		return nil, err
 	}
 }

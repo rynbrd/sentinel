@@ -24,11 +24,11 @@ func (t *Template) differs(fileA, fileB string) bool {
 	var err error
 	var hashA, hashB string
 	if hashA, err = hash.File(fileA); err != nil {
-		logger.Warn("unable to hash %s", fileA)
+		logger.Errorf("unable to hash %s", fileA)
 		return true
 	}
 	if hashB, err = hash.File(fileB); err != nil {
-		logger.Warn("unable to hash %s", fileB)
+		logger.Errorf("unable to hash %s", fileB)
 		return true
 	}
 	return hashA != hashB
@@ -101,9 +101,9 @@ func (renderer *Renderer) Render(context map[string]interface{}) (changed bool, 
 			return
 		}
 		if oneChanged {
-			logger.Debug("template '%s' rendered to '%s'", template.Src, template.Dest)
+			logger.Debugf("template '%s' rendered to '%s'", template.Src, template.Dest)
 		} else {
-			logger.Debug("template '%s' did not change", template.Dest)
+			logger.Debugf("template '%s' did not change", template.Dest)
 		}
 		changed = changed || oneChanged
 	}

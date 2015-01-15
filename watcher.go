@@ -37,7 +37,7 @@ func NewWatcher(name, prefix string, watch, context []string, renderer *Renderer
 // Run the watcher command.
 func (watcher *Watcher) runCommand() error {
 	if len(watcher.command) == 0 {
-		logger.Debug("%s has no command, skipping", watcher.name)
+		logger.Debugf("%s has no command, skipping", watcher.name)
 		return nil
 	}
 
@@ -45,19 +45,19 @@ func (watcher *Watcher) runCommand() error {
 	cmdArgs := watcher.command[1:]
 	command := exec.Command(cmdName, cmdArgs...)
 
-	logger.Debug("%s calling command", watcher.name)
+	logger.Debugf("%s calling command", watcher.name)
 	out, err := command.CombinedOutput()
 	if err != nil {
-		logger.Error("%s cmd failed: %s", watcher.name, err)
+		logger.Errorf("%s cmd failed: %s", watcher.name, err)
 	}
 	outStr := string(out)
 	if outStr != "" {
 		lines := strings.Split(outStr, "\n")
 		for _, line := range lines {
 			if err == nil {
-				logger.Debug("%s cmd: %s", watcher.name, line)
+				logger.Debugf("%s cmd: %s", watcher.name, line)
 			} else {
-				logger.Warn("%s cmd: %s", watcher.name, line)
+				logger.Errorf("%s cmd: %s", watcher.name, line)
 			}
 		}
 	}
@@ -73,16 +73,16 @@ func (watcher *Watcher) Name() string {
 func (watcher *Watcher) Execute() error {
 	context, err := watcher.client.GetMaps(watcher.prefix, watcher.context, true)
 	if err != nil {
-		logger.Error("%s failed to retrieve context: %s", watcher.Name(), err)
+		logger.Errorf("%s failed to retrieve context: %s", watcher.Name(), err)
 		return err
 	}
 
-	logger.Debug("context: %v\n", context)
+	logger.Debugf("context: %v\n", context)
 	changed := true
 	if watcher.renderer != nil {
 		changed, err = watcher.renderer.Render(context)
 		if err != nil {
-			logger.Error("%s failed to render: %s", watcher.Name(), err)
+			logger.Errorf("%s failed to render: %s", watcher.Name(), err)
 			return err
 		}
 	}
@@ -90,12 +90,12 @@ func (watcher *Watcher) Execute() error {
 	if changed {
 		err = watcher.runCommand()
 		if err != nil {
-			logger.Error("%s failed to run command: %s", watcher.Name(), err)
+			logger.Errorf("%s failed to run command: %s", watcher.Name(), err)
 			return err
 		}
-		logger.Info("%s executed", watcher.Name())
+		logger.Infof("%s executed", watcher.Name())
 	} else {
-		logger.Info("%s skipped execution", watcher.Name())
+		logger.Infof("%s skipped execution", watcher.Name())
 	}
 	return nil
 }

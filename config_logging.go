@@ -1,28 +1,25 @@
 package main
 
 import (
-	"gopkg.in/BlueDragonX/simplelog.v1"
+	"errors"
 	"gopkg.in/BlueDragonX/yamlcfg.v1"
 )
 
 const (
-	DefaultLoggingSyslog  = false
-	DefaultLoggingConsole = true
-	DefaultLoggingLevel   = simplelog.NOTICE
+	DefaultLoggingTarget  = "stderr"
+	DefaultLoggingLevel   = "info"
 )
 
 // Store log related configuration.
 type LoggingConfig struct {
-	Syslog  bool
-	Console bool
-	Level   int
+	Target string
+	Level  string
 }
 
 // Get default logging config.
 func DefaultLoggingConfig() LoggingConfig {
 	return LoggingConfig{
-		DefaultLoggingSyslog,
-		DefaultLoggingConsole,
+		DefaultLoggingTarget,
 		DefaultLoggingLevel,
 	}
 }
@@ -30,18 +27,16 @@ func DefaultLoggingConfig() LoggingConfig {
 // SetYAML parses the YAML tree into the object.
 func (cfg *LoggingConfig) SetYAML(tag string, data interface{}) bool {
 	yamlcfg.AssertIsMap("logging", data)
-	cfg.Syslog = yamlcfg.GetBool(data, "syslog", DefaultLoggingSyslog)
-	cfg.Console = yamlcfg.GetBool(data, "console", DefaultLoggingConsole)
-	levelStr := yamlcfg.GetString(data, "level", "")
-	if levelStr == "" {
-		cfg.Level = DefaultLoggingLevel
-	} else {
-		cfg.Level = simplelog.StringToLevel(levelStr)
-	}
+	cfg.Target = yamlcfg.GetString(data, "target", DefaultLoggingTarget)
+	cfg.Level = yamlcfg.GetString(data, "level", DefaultLoggingLevel)
 	return true
 }
 
 // Validate the logging configuration.
 func (cfg *LoggingConfig) Validate() []error {
-	return []error{}
+	errs := []error{}
+	if cfg.Target == "" {
+		errs = append(errs, errors.New("invalid logging target"))
+	}
+	return errs
 }

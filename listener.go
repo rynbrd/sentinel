@@ -33,7 +33,7 @@ func NewListener(prefix, key string, client *Client) *Listener {
 // Start the listener. Emit the name of the key to the provided channel when it changes.
 func (w *Listener) Start(events []chan string) {
 	key := joinPaths(w.prefix, w.Key)
-	logger.Debug("watching '%s'", key)
+	logger.Debugf("watching '%s'", key)
 
 	go func() {
 	Loop:
@@ -46,7 +46,7 @@ func (w *Listener) Start(events []chan string) {
 					if !open {
 						break
 					}
-					logger.Debug("key '%s' changed", response.Node.Key)
+					logger.Debugf("key '%s' changed", response.Node.Key)
 					event := strings.Trim(strings.TrimPrefix(response.Node.Key, w.prefix), "/")
 					for _, eventChan := range events {
 						eventChan <- event
@@ -62,8 +62,8 @@ func (w *Listener) Start(events []chan string) {
 			if err == etcd.ErrWatchStoppedByUser {
 				break Loop
 			} else {
-				logger.Error("watch on '%s' failed: %s", key, err)
-				logger.Info("retrying in %ds", WatchRetry)
+				logger.Errorf("watch on '%s' failed: %s", key, err)
+				logger.Infof("retrying in %ds", WatchRetry)
 				select {
 				case <-w.stop:
 					break Loop

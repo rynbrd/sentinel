@@ -1,61 +1,50 @@
 package main
 
 import (
-	"fmt"
-	"gopkg.in/BlueDragonX/simplelog.v1"
+	"gopkg.in/BlueDragonX/go-log.v0"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 var (
-	logger *simplelog.Logger
+	logger *log.Logger
 )
 
 // Run the app.
 func main() {
 	// initialize logging
 	var err error
-	if logger, err = simplelog.NewLogger(simplelog.CONSOLE, "sentinel"); err != nil {
-		fmt.Println("failed to create logger:", err)
-		os.Exit(1)
-	}
+	logger = log.NewOrExit()
 
 	// load configuration
 	var cfg Config
 	if cfg, err = LoadConfig(); err != nil {
-		logger.Fatal("error parsing config: %s", err)
+		logger.Fatalf("error parsing config: %s", err)
 	}
 	if errs := cfg.Validate(); len(errs) != 0 {
 		logger.Error("config file is invalid:")
 		for _, err = range errs {
-			logger.Error("  %s", err)
+			logger.Errorf("  %s", err)
 		}
 		logger.Fatal("could not process config file")
 	}
 
 	// replace the logger
-	loggerDest := 0
-	if cfg.Logging.Syslog {
-		loggerDest |= simplelog.SYSLOG
-	}
-	if cfg.Logging.Console {
-		loggerDest |= simplelog.CONSOLE
-	}
-
 	oldLogger := logger
-	if logger, err = simplelog.NewLogger(loggerDest, "sentinel"); err != nil {
-		oldLogger.Fatal("failed to create logger:", err)
+	logTarget := log.Target(cfg.Logging.Target)
+	logLevel := log.Level(cfg.Logging.Level)
+	if logger, err = log.New(logTarget, logLevel); err != nil {
+		oldLogger.Fatalf("failed to create logger:", err)
 	}
-	logger.SetLevel(cfg.Logging.Level)
+	oldLogger.Close()
 
 	// begin startup sequence
 	var client *Client
 	client, err = cfg.Etcd.CreateClient()
 	if err != nil {
-		logger.Fatal("failed to create client: %s", err)
+		logger.Fatalf("failed to create client: %s", err)
 	}
-	oldLogger.Close()
 
 	manager, err := cfg.Watchers.CreateWatchManager(client)
 	if err != nil {
@@ -73,21 +62,21 @@ func main() {
 	}
 
 	// exec
-	logger.Notice("executing watchers")
+	logger.Info("executing watchers")
 	if err = manager.Execute(exec); err != nil {
-		logger.Fatal("failed to execute: %s", err)
+		logger.Fatalf("failed to execute: %s", err)
 	}
 
 	if len(cfg.Exec) == 0 {
 		// run
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
-		logger.Notice("starting")
+		logger.Info("starting")
 		manager.Start()
-		logger.Notice("started")
+		logger.Info("started")
 		<-signals
-		logger.Notice("stopping")
+		logger.Info("stopping")
 		manager.Stop()
-		logger.Notice("stopped")
+		logger.Info("stopped")
 	}
 }
