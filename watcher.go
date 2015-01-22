@@ -23,7 +23,7 @@ type Watcher struct {
 func NewWatcher(client *Client, config *settings.Settings) (*Watcher, error) {
 	names := strings.Split(config.Key, ".")
 	name := names[len(names)-1]
-	prefix := config.StringDflt("prefix", "")
+	prefix := config.StringDflt("prefix", client.prefix)
 	watch := config.StringArrayDflt("watch", []string{})
 	context := config.StringArrayDflt("context", []string{})
 
