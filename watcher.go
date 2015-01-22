@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/BlueDragonX/go-settings.v0"
 	"os/exec"
 	"strings"
 )
@@ -18,20 +19,54 @@ type Watcher struct {
 	client   *Client
 }
 
-// Create a new watcher.
-func NewWatcher(name, prefix string, watch, context []string, renderer *Renderer, command []string, client *Client) *Watcher {
-	if prefix == "" {
-		prefix = client.prefix
+// Create a new watcher with the provided configuration.
+func NewWatcher(client *Client, config *settings.Settings) (*Watcher, error) {
+	names := strings.Split(config.Key, ".")
+	name := names[len(names)-1]
+	prefix := config.StringDflt("prefix", "")
+	watch := config.StringArrayDflt("watch", []string{})
+	context := config.StringArrayDflt("context", []string{})
+
+	if len(watch) == 0 {
+		return nil, fmt.Errorf("watcher %s requires at least one watch path", name)
 	}
+	if len(context) == 0 {
+		return nil, fmt.Errorf("watcher %s requires at least one context path", name)
+	}
+
+	var command []string
+	if cmdStr, err := config.String("command"); err == nil {
+		command = []string{"bash", "-c", cmdStr}
+	} else if cmdArray, err := config.StringArray("command"); err == nil {
+		command = cmdArray
+	}
+
+	tplConfigs := config.ObjectArrayDflt("templates", []*settings.Settings{})
+	tpls := make([]Template, len(tplConfigs))
+	for n, tplConfig := range tplConfigs {
+		tpl := Template{
+			Src: tplConfig.StringDflt("src", ""),
+			Dest: tplConfig.StringDflt("dest", ""),
+		}
+		if tpl.Src == "" {
+			return nil, fmt.Errorf("watcher %s template %d requires a src path", name, n)
+		}
+		if tpl.Dest == "" {
+			return nil, fmt.Errorf("watcher %s template %d requires a dest path", name, n)
+		}
+		tpls = append(tpls, tpl)
+	}
+	renderer := &Renderer{tpls}
+
 	return &Watcher{
-		name,
-		prefix,
-		watch,
-		context,
-		renderer,
-		command,
-		client,
-	}
+		name: name,
+		prefix: prefix,
+		watch: watch,
+		context: context,
+		renderer: renderer,
+		command: command,
+		client: client,
+	}, nil
 }
 
 // Run the watcher command.
@@ -119,7 +154,7 @@ type WatchManager struct {
 }
 
 // Create a new watch manager.
-func NewWatchManager(watchers []*Watcher, client *Client) *WatchManager {
+func NewWatchManager(client *Client, watchers []*Watcher) *WatchManager {
 	manager := &WatchManager{
 		make(map[string]*Watcher),
 		make(map[string]*Listener),

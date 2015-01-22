@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"gopkg.in/BlueDragonX/go-log.v0"
+	"gopkg.in/BlueDragonX/go-settings.v0"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,65 +11,79 @@ import (
 
 var (
 	logger *log.Logger
+	config *settings.Settings
 )
+
+func configure() {
+	options := ParseOptionsOrExit(os.Args)
+	config = settings.LoadOrExit(options.Config)
+	config.Set("exec", options.Exec)
+
+	if len(options.Etcd) > 0 {
+		config.Set("etcd.uris", options.Etcd)
+	}
+
+	if options.LogTarget != "" {
+		config.Set("logging.target", options.LogTarget)
+	}
+
+	if options.LogLevel != "" {
+		config.Set("logging.level", options.LogLevel)
+	}
+
+	logOpts := []log.Option{}
+	if logTarget, err := config.String("logging.target"); err == nil {
+		logOpts = append(logOpts, log.Target(logTarget))
+	}
+	if logLevel, err := config.String("logging.level"); err == nil {
+		logOpts = append(logOpts, log.Level(logLevel))
+	}
+	logger = log.NewOrExit(logOpts...)
+
+	etcdURI := config.StringDflt("etcd.uri", "")
+	etcdURIs := config.StringArrayDflt("etcd.uris", []string{})
+	if len(etcdURIs) == 0 && etcdURI != "" {
+		rawURIs := make([]interface{}, 1)
+		rawURIs[0] = etcdURI
+		config.Set("etcd.uris", rawURIs)
+	}
+}
 
 // Run the app.
 func main() {
-	// initialize logging
-	var err error
-	logger = log.NewOrExit()
-
-	// load configuration
-	var cfg Config
-	if cfg, err = LoadConfig(); err != nil {
-		logger.Fatalf("error parsing config: %s", err)
-	}
-	if errs := cfg.Validate(); len(errs) != 0 {
-		logger.Error("config file is invalid:")
-		for _, err = range errs {
-			logger.Errorf("  %s", err)
-		}
-		logger.Fatal("could not process config file")
-	}
-
-	// replace the logger
-	oldLogger := logger
-	logTarget := log.Target(cfg.Logging.Target)
-	logLevel := log.Level(cfg.Logging.Level)
-	if logger, err = log.New(logTarget, logLevel); err != nil {
-		oldLogger.Fatalf("failed to create logger:", err)
-	}
-	oldLogger.Close()
+	configure()
 
 	// begin startup sequence
-	var client *Client
-	client, err = cfg.Etcd.CreateClient()
+	client, err := NewClient(config.ObjectDflt("etcd", &settings.Settings{}))
 	if err != nil {
 		logger.Fatalf("failed to create client: %s", err)
 	}
 
-	manager, err := cfg.Watchers.CreateWatchManager(client)
-	if err != nil {
-		logger.Fatal("failed to create watch manager")
-	}
+	fmt.Printf("Etcd Prefix: %s\n", client.prefix)
+	fmt.Printf("Etcd Client: %v\n", client.client)
 
-	var exec []string
-	if len(cfg.Exec) > 0 {
-		exec = cfg.Exec
-	} else {
-		exec = []string{}
-		for name := range manager.Watchers {
-			exec = append(exec, name)
+	watchersConfig := config.ObjectMapDflt("watchers", map[string]*settings.Settings{})
+	watchers := make([]*Watcher, 0, len(watchersConfig))
+	for _, watcherConfig := range watchersConfig {
+		if watcher, err := NewWatcher(client, watcherConfig); err == nil {
+			watchers = append(watchers, watcher)
+			fmt.Printf("Added watcher %s\n", watcher.Name())
+		} else {
+			logger.Fatal(err.Error())
 		}
 	}
 
+	manager := NewWatchManager(client, watchers)
+	fmt.Printf("WatchManager: %v\n", manager)
+
 	// exec
 	logger.Info("executing watchers")
+	exec := config.StringArrayDflt("exec", []string{})
 	if err = manager.Execute(exec); err != nil {
 		logger.Fatalf("failed to execute: %s", err)
 	}
 
-	if len(cfg.Exec) == 0 {
+	if len(exec) == 0 {
 		// run
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)

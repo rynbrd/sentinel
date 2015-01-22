@@ -70,12 +70,11 @@ paremeters are:
   shell. The second will cause it to be executed directly.
 
 ### logging ###
-This section controls how Beacon outputs logging. Available parameters are:
+This section controls how Beacon outputs logging. Sentinel uses [go-log][3] for
+logging. See its documentation for valid target and log level values.
 
-- `console` - Whether or not to log to the console. Defaults to true.
-- `syslog` - Whether or not to log to syslog. Defaults to false.
-- `level` - The log level. Valid values are `debug`, `info`, `notice`, `warn`,
-  `error`, or `fatal`.
+- `target` - The target to log to. Defaults to `stderr`.
+- `level` - The log level. Valid values are `debug`, `info`, or `error`.
 
 Beacon Example
 --------------
@@ -114,3 +113,4 @@ Copyright (c) 2014 Ryan Bourgeois. Licensed under BSD-Modified. See the
 
 [1]: https://raw.githubusercontent.com/BlueDragonX/sentinel/master/LICENSE "Sentinel License"
 [2]: https://github.com/BlueDragonX/beacon/ "Beacon"
+[3]: https://github.com/BlueDragonX/go-log/ "go-log"

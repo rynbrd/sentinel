@@ -3,8 +3,11 @@ package main
 import (
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/peterbourgon/mergemap"
+	"gopkg.in/BlueDragonX/go-settings.v0"
 	"strings"
 )
+
+var DefaultEtcdURIs []string = []string{"http://172.17.42.1:4001/"}
 
 // Make a prefix from a path. The resulting prefix will begin with a / and not end in a /.
 func makePrefix(path string) string {
@@ -50,26 +53,31 @@ type Client struct {
 	prefix string
 }
 
-// Internal client creation.
-func newClient(etcdClient *etcd.Client, prefix string) *Client {
-	return &Client{
-		etcdClient,
-		makePrefix(prefix),
-	}
-}
-
 // Create a new client.
-func NewClient(uris []string, prefix string) *Client {
-	return newClient(etcd.NewClient(uris), prefix)
-}
-
-// Create a new client with TLS enabled.
-func NewTLSClient(uris []string, prefix string, tlsCert string, tlsKey string, tlsCaCert string) (client *Client, err error) {
-	var etcdClient *etcd.Client
-	if etcdClient, err = etcd.NewTLSClient(uris, tlsCert, tlsKey, tlsCaCert); err == nil {
-		client = newClient(etcdClient, prefix)
+func NewClient(settings *settings.Settings) (*Client, error) {
+	uris := settings.StringArrayDflt("uris", []string{})
+	if len(uris) == 0 {
+		uris = DefaultEtcdURIs
 	}
-	return
+	prefix := settings.StringDflt("prefix", "")
+	tlsKey := settings.StringDflt("tls-key", "")
+	tlsCert := settings.StringDflt("tls-cert", "")
+	tlsCaCert := settings.StringDflt("tls-ca-cert", "")
+
+	var err error
+	var etcdClient *etcd.Client
+	if tlsKey != "" && tlsCert != "" && tlsCaCert != "" {
+		if etcdClient, err = etcd.NewTLSClient(uris, tlsCert, tlsKey, tlsCaCert); err != nil {
+			return nil, err
+		}
+	} else {
+		etcdClient = etcd.NewClient(uris)
+	}
+
+	return &Client{
+		client: etcdClient,
+		prefix: prefix,
+	}, nil
 }
 
 // Create a mapping rooted at the prefix.

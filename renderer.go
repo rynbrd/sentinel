@@ -15,10 +15,6 @@ type Template struct {
 	Dest   string
 }
 
-func NewTemplate(src, dest string) Template {
-	return Template{src, dest}
-}
-
 // Return true if one file differs from another.
 func (t *Template) differs(fileA, fileB string) bool {
 	var err error
@@ -84,26 +80,19 @@ func (t *Template) Render(context map[string]interface{}) (changed bool, err err
 
 // A renderer generates files from a collection of templates.
 type Renderer struct {
-	templates []Template
-}
-
-func NewRenderer(templates []Template) *Renderer {
-	item := &Renderer{
-		templates,
-	}
-	return item
+	Templates []Template
 }
 
 func (renderer *Renderer) Render(context map[string]interface{}) (changed bool, err error) {
 	var oneChanged bool
-	for _, template := range renderer.templates {
-		if oneChanged, err = template.Render(context); err != nil {
+	for _, tpl := range renderer.Templates {
+		if oneChanged, err = tpl.Render(context); err != nil {
 			return
 		}
 		if oneChanged {
-			logger.Debugf("template '%s' rendered to '%s'", template.Src, template.Dest)
+			logger.Debugf("template '%s' rendered to '%s'", tpl.Src, tpl.Dest)
 		} else {
-			logger.Debugf("template '%s' did not change", template.Dest)
+			logger.Debugf("template '%s' did not change", tpl.Dest)
 		}
 		changed = changed || oneChanged
 	}
