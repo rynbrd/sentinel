@@ -45,7 +45,7 @@ func NewWatcher(client *Client, config *settings.Settings) (*Watcher, error) {
 	tpls := make([]Template, len(tplConfigs))
 	for n, tplConfig := range tplConfigs {
 		tpl := Template{
-			Src: tplConfig.StringDflt("src", ""),
+			Src:  tplConfig.StringDflt("src", ""),
 			Dest: tplConfig.StringDflt("dest", ""),
 		}
 		if tpl.Src == "" {
@@ -59,13 +59,13 @@ func NewWatcher(client *Client, config *settings.Settings) (*Watcher, error) {
 	renderer := &Renderer{tpls}
 
 	return &Watcher{
-		name: name,
-		prefix: prefix,
-		watch: watch,
-		context: context,
+		name:     name,
+		prefix:   prefix,
+		watch:    watch,
+		context:  context,
 		renderer: renderer,
-		command: command,
-		client: client,
+		command:  command,
+		client:   client,
 	}, nil
 }
 

@@ -11,8 +11,8 @@ import (
 )
 
 type Template struct {
-	Src    string
-	Dest   string
+	Src  string
+	Dest string
 }
 
 // Return true if one file differs from another.

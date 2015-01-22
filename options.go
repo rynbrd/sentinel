@@ -1,8 +1,8 @@
 package main
 
 import (
-	"strings"
 	"flag"
+	"strings"
 )
 
 // A string array option capable of being appended to.
@@ -18,11 +18,11 @@ func (strs *stringsOpt) Set(value string) error {
 }
 
 type Options struct {
-	Config string
-	Exec []string
-	Etcd []string
+	Config    string
+	Exec      []string
+	Etcd      []string
 	LogTarget string
-	LogLevel string
+	LogLevel  string
 }
 
 // Parse commandline options. Exit on failure.
@@ -42,10 +42,10 @@ func ParseOptionsOrExit(args []string) *Options {
 	flags.Parse(args[1:])
 
 	return &Options{
-		Config: config,
-		Exec: []string(exec),
-		Etcd: []string(etcd),
+		Config:    config,
+		Exec:      []string(exec),
+		Etcd:      []string(etcd),
 		LogTarget: logTarget,
-		LogLevel: logLevel,
+		LogLevel:  logLevel,
 	}
 }

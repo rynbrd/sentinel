@@ -9,11 +9,6 @@ import (
 
 var DefaultEtcdURIs []string = []string{"http://172.17.42.1:4001/"}
 
-// Make a prefix from a path. The resulting prefix will begin with a / and not end in a /.
-func makePrefix(path string) string {
-	return "/" + strings.Trim(path, "/")
-}
-
 // Join multiple key paths into one. The resulting path will be absolute.
 func joinPaths(paths ...string) string {
 	path := ""
