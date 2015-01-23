@@ -17,19 +17,22 @@ func (strs *stringsOpt) Set(value string) error {
 	return nil
 }
 
+// Store values retrieved from the cli.
 type Options struct {
 	Config    string
 	Exec      []string
 	Etcd      []string
+	Prefix    string
 	LogTarget string
 	LogLevel  string
 }
 
-// Parse commandline options. Exit on failure.
+// Parse cli options. Exit on failure.
 func ParseOptionsOrExit(args []string) *Options {
 	var config string
 	var exec stringsOpt
 	var etcd stringsOpt
+	var prefix string
 	var logTarget string
 	var logLevel string
 
@@ -37,6 +40,7 @@ func ParseOptionsOrExit(args []string) *Options {
 	flags.StringVar(&config, "config", "config.yml", "YAML configuration file.")
 	flags.Var(&exec, "exec", "Execute a watcher and exit. May be provided multiple times.")
 	flags.Var(&etcd, "etcd", "The URI of etcd. May be provided multiple times.")
+	flags.StringVar(&prefix, "prefix", "", "A prefix to prepend to all key paths.")
 	flags.StringVar(&logTarget, "log-target", "stderr", "The target to log to.")
 	flags.StringVar(&logLevel, "log-level", "info", "The level of logs to log.")
 	flags.Parse(args[1:])
