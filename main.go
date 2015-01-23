@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	logger *log.Logger
+	logger *log.Logger = log.NewOrExit()
 	config *settings.Settings
 )
 
