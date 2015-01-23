@@ -147,7 +147,7 @@ Loop:
 		if response, err = c.client.Watch(prefix, waitIndex, true, nil, stop); err == nil {
 			waitIndex = response.EtcdIndex
 			retryTime = retrySeed
-			changes <- strings.Trim(response.Node.Key, "/")
+			changes <- prefix
 		} else if err == etcd.ErrWatchStoppedByUser {
 			err = nil
 			break
@@ -171,7 +171,7 @@ Loop:
 }
 
 // Recursively watch each prefix in `prefixes` for changes. Send the name of
-// changed keys to `changes` channel. Stop watching and exit when `stop`
+// changed prefix to the `changes` channel. Stop watching and exit when `stop`
 // receives `true`. Wait for the server to become available if it isn't. Each
 // failed attempt will be followed by an increasingly longer period of sleep.
 func (c *Client) Watch(prefixes []string, changes chan string, stop chan bool) {
