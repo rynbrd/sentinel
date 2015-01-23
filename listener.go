@@ -45,7 +45,7 @@ func (w *Listener) Start(events []chan string) {
 			close(join)
 		}()
 
-		w.client.Watch(key, changes, w.stop)
+		w.client.Watch([]string{key}, changes, w.stop)
 		<-join
 
 		for _, eventChan := range events {

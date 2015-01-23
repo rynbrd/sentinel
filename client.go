@@ -133,22 +133,21 @@ func (c *Client) Get(prefix string, keys []string) (map[string]interface{}, erro
 	return mapping, err
 }
 
-// Recursively watch a `key` rooted at `prefix` for changes. Send the name of
-// changed keys to `changes` channel. Stop watching and exit when `stop`
-// receives `true`. Wait for the server to become available if it isn't. Each
-// failed attempt will be followed by an increasingly longer period of sleep.
-func (c *Client) Watch(prefix string, changes chan string, stop chan bool) {
+// Watch a single prefix for changes.
+func (c *Client) watchOne(prefix string, changes chan string, stop chan bool) {
 	defer close(changes)
 	prefix = strings.Trim(prefix, "/")
 	var waitIndex uint64 = 0
 	var retryTime int64 = retrySeed
+
+Loop:
 	for {
 		var err error
 		var response *etcd.Response
 		if response, err = c.client.Watch(prefix, waitIndex, true, nil, stop); err == nil {
 			waitIndex = response.EtcdIndex
 			retryTime = retrySeed
-			changes <- strings.TrimPrefix(strings.Trim(response.Node.Key, "/"), prefix)
+			changes <- strings.Trim(response.Node.Key, "/")
 		} else if err == etcd.ErrWatchStoppedByUser {
 			err = nil
 			break
@@ -167,6 +166,40 @@ func (c *Client) Watch(prefix string, changes chan string, stop chan bool) {
 			} else {
 				retryTime = retryMax
 			}
+		}
+	}
+}
+
+// Recursively watch each prefix in `prefixes` for changes. Send the name of
+// changed keys to `changes` channel. Stop watching and exit when `stop`
+// receives `true`. Wait for the server to become available if it isn't. Each
+// failed attempt will be followed by an increasingly longer period of sleep.
+func (c *Client) Watch(prefixes []string, changes chan string, stop chan bool) {
+	type syncStore struct {
+		stop chan bool
+		join chan bool
+	}
+
+	syncs := make([]syncStore, len(prefixes))
+	for n, prefix := range prefixes {
+		syncs[n] = syncStore{
+			make(chan bool),
+			make(chan bool),
+		}
+		go func(sync syncStore) {
+			c.watchOne(prefix, changes, sync.stop)
+			close(sync.join)
+		}(syncs[n])
+	}
+
+	<-stop
+	for _, sync := range syncs {
+		sync.stop <- true
+	}
+	for _, sync := range syncs {
+		select {
+		case <-sync.join:
+		case <-time.After(200 * time.Millisecond):
 		}
 	}
 }
