@@ -10,6 +10,7 @@ import (
 	"text/template"
 )
 
+// Describes a template as part of a watcher.
 type Template struct {
 	Src  string
 	Dest string
@@ -76,25 +77,4 @@ func (t *Template) Render(context map[string]interface{}) (changed bool, err err
 	// replace the old file with the new one
 	err = os.Rename(tmp.Name(), t.Dest)
 	return
-}
-
-// A renderer generates files from a collection of templates.
-type Renderer struct {
-	Templates []Template
-}
-
-func (renderer *Renderer) Render(context map[string]interface{}) (changed bool, err error) {
-	var oneChanged bool
-	for _, tpl := range renderer.Templates {
-		if oneChanged, err = tpl.Render(context); err != nil {
-			return
-		}
-		if oneChanged {
-			logger.Debugf("template '%s' rendered to '%s'", tpl.Src, tpl.Dest)
-		} else {
-			logger.Debugf("template '%s' did not change", tpl.Dest)
-		}
-		changed = changed || oneChanged
-	}
-	return changed, nil
 }

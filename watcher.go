@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"gopkg.in/BlueDragonX/go-settings.v0"
-	"os/exec"
 	"strings"
 )
 
@@ -14,8 +13,7 @@ type Watcher struct {
 	prefix   string
 	watch    []string
 	context  []string
-	renderer *Renderer
-	command  []string
+	executor *Executor
 	client   *Client
 }
 
@@ -56,47 +54,21 @@ func NewWatcher(client *Client, config *settings.Settings) (*Watcher, error) {
 		}
 		tpls = append(tpls, tpl)
 	}
-	renderer := &Renderer{tpls}
+
+	executor := &Executor{
+		Name:      name,
+		Templates: tpls,
+		Command:   command,
+	}
 
 	return &Watcher{
 		name:     name,
 		prefix:   prefix,
 		watch:    watch,
 		context:  context,
-		renderer: renderer,
-		command:  command,
+		executor: executor,
 		client:   client,
 	}, nil
-}
-
-// Run the watcher command.
-func (watcher *Watcher) runCommand() error {
-	if len(watcher.command) == 0 {
-		logger.Debugf("%s has no command, skipping", watcher.name)
-		return nil
-	}
-
-	cmdName := watcher.command[0]
-	cmdArgs := watcher.command[1:]
-	command := exec.Command(cmdName, cmdArgs...)
-
-	logger.Debugf("%s calling command", watcher.name)
-	out, err := command.CombinedOutput()
-	if err != nil {
-		logger.Errorf("%s cmd failed: %s", watcher.name, err)
-	}
-	outStr := string(out)
-	if outStr != "" {
-		lines := strings.Split(outStr, "\n")
-		for _, line := range lines {
-			if err == nil {
-				logger.Debugf("%s cmd: %s", watcher.name, line)
-			} else {
-				logger.Errorf("%s cmd: %s", watcher.name, line)
-			}
-		}
-	}
-	return err
 }
 
 // Return the name of the watcher.
@@ -111,28 +83,7 @@ func (watcher *Watcher) Execute() error {
 		logger.Errorf("%s failed to retrieve context: %s", watcher.Name(), err)
 		return err
 	}
-
-	logger.Debugf("context: %v\n", context)
-	changed := true
-	if watcher.renderer != nil {
-		changed, err = watcher.renderer.Render(context)
-		if err != nil {
-			logger.Errorf("%s failed to render: %s", watcher.Name(), err)
-			return err
-		}
-	}
-
-	if changed {
-		err = watcher.runCommand()
-		if err != nil {
-			logger.Errorf("%s failed to run command: %s", watcher.Name(), err)
-			return err
-		}
-		logger.Infof("%s executed", watcher.Name())
-	} else {
-		logger.Infof("%s skipped execution", watcher.Name())
-	}
-	return nil
+	return watcher.executor.Execute(context)
 }
 
 // Execute the watcher when an event is received.
