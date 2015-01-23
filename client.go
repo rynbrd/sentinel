@@ -5,6 +5,13 @@ import (
 	"github.com/peterbourgon/mergemap"
 	"gopkg.in/BlueDragonX/go-settings.v0"
 	"strings"
+	"time"
+)
+
+const (
+	retrySeed   = 500
+	retryMax    = 30000
+	retryFactor = 1.5
 )
 
 var DefaultEtcdURIs []string = []string{"http://172.17.42.1:4001/"}
@@ -22,24 +29,44 @@ func joinPaths(paths ...string) string {
 }
 
 // Return the base key name for a key path.
-func keyName(path string) string {
+func getKeyName(path string) string {
 	parts := strings.Split(path, "/")
 	unclean := parts[len(parts)-1]
 	return strings.Replace(unclean, "-", "_", -1)
 }
 
 // Return a value containing node contents.
-func nodeValue(node *etcd.Node) interface{} {
+func getNodeValue(node *etcd.Node) interface{} {
 	if node.Dir {
 		mapping := make(map[string]interface{})
 		for _, child := range node.Nodes {
-			name := keyName(child.Key)
-			mapping[name] = nodeValue(child)
+			name := getKeyName(child.Key)
+			mapping[name] = getNodeValue(child)
 		}
 		return mapping
 	} else {
 		return node.Value
 	}
+}
+
+// Convert the node tree to a map rooted at the prefix.
+func getNodeMap(prefix string, node *etcd.Node) map[string]interface{} {
+	prefix = strings.Trim(prefix, "/") + "/"
+	path := strings.TrimPrefix(strings.Trim(node.Key, "/"), prefix)
+	path = strings.Replace(path, "-", "_", -1)
+	parts := strings.Split(path, "/")
+	base := parts[len(parts)-1]
+	dir := parts[:len(parts)-1]
+	mapping := map[string]interface{}{
+		base: getNodeValue(node),
+	}
+
+	for i := len(dir) - 1; i >= 0; i-- {
+		mapping = map[string]interface{}{
+			parts[i]: mapping,
+		}
+	}
+	return mapping
 }
 
 // etcd client wrapper.
@@ -49,15 +76,19 @@ type Client struct {
 }
 
 // Create a new client.
-func NewClient(settings *settings.Settings) (*Client, error) {
-	uris := settings.StringArrayDflt("uris", []string{})
+func NewClient(config *settings.Settings) (*Client, error) {
+	uris := config.StringArrayDflt("uris", []string{})
 	if len(uris) == 0 {
 		uris = DefaultEtcdURIs
 	}
-	prefix := settings.StringDflt("prefix", "")
-	tlsKey := settings.StringDflt("tls-key", "")
-	tlsCert := settings.StringDflt("tls-cert", "")
-	tlsCaCert := settings.StringDflt("tls-ca-cert", "")
+	for n, uri := range uris {
+		uris[n] = strings.TrimRight(uri, "/")
+	}
+
+	prefix := config.StringDflt("prefix", "")
+	tlsKey := config.StringDflt("tls-key", "")
+	tlsCert := config.StringDflt("tls-cert", "")
+	tlsCaCert := config.StringDflt("tls-ca-cert", "")
 
 	var err error
 	var etcdClient *etcd.Client
@@ -75,47 +106,67 @@ func NewClient(settings *settings.Settings) (*Client, error) {
 	}, nil
 }
 
-// Create a mapping rooted at the prefix.
-func (c *Client) nodeMapping(prefix string, node *etcd.Node) map[string]interface{} {
-	prefix = strings.Trim(prefix, "/") + "/"
-	path := strings.TrimPrefix(strings.Trim(node.Key, "/"), prefix)
-	path = strings.Replace(path, "-", "_", -1)
-	parts := strings.Split(path, "/")
-	base := parts[len(parts)-1]
-	dir := parts[:len(parts)-1]
-	mapping := map[string]interface{}{
-		base: nodeValue(node),
-	}
-
-	for i := len(dir) - 1; i >= 0; i-- {
-		mapping = map[string]interface{}{
-			parts[i]: mapping,
-		}
-	}
-	return mapping
-}
-
-// Return a key as a map value.
-func (c *Client) GetMap(prefix, key string, recursive bool) (map[string]interface{}, error) {
+// Get a single key and convert it to a map. Returns an empty map if the is not found. Returns an error on failure.
+func (c *Client) getOne(prefix, key string) (map[string]interface{}, error) {
 	key = joinPaths(prefix, key)
-	if response, err := c.client.Get(key, false, recursive); err == nil {
-		logger.Debugf("get key '%s': %v", key, response.Node)
-		return c.nodeMapping(prefix, response.Node), nil
+	if response, err := c.client.Get(key, false, true); err == nil {
+		return getNodeMap(prefix, response.Node), nil
+	} else if etcdErr, ok := err.(*etcd.EtcdError); ok && etcdErr.ErrorCode == 100 {
+		return make(map[string]interface{}), nil
 	} else {
-		logger.Debugf("get key '%s': %s", key, err)
 		return nil, err
 	}
 }
 
 // Return a series of keys merged into a single value.
-func (c *Client) GetMaps(prefix string, keys []string, recursive bool) (mapping map[string]interface{}, err error) {
-	mapping = make(map[string]interface{})
+func (c *Client) Get(prefix string, keys []string) (map[string]interface{}, error) {
+	var err error
+	mapping := make(map[string]interface{})
 	for _, key := range keys {
-		if nodeMapping, err := c.GetMap(prefix, key, recursive); err == nil {
-			mapping = mergemap.Merge(mapping, nodeMapping)
+		var keyMapping map[string]interface{}
+		if keyMapping, err = c.getOne(prefix, key); err == nil {
+			mapping = mergemap.Merge(mapping, keyMapping)
 		} else {
 			break
 		}
 	}
-	return
+	return mapping, err
+}
+
+// Recursively watch a `key` rooted at `prefix` for changes. Send the name of
+// changed keys to `changes` channel. Stop watching and exit when `stop`
+// receives `true`. Wait for the server to become available if it isn't. Each
+// failed attempt will be followed by an increasingly longer period of sleep.
+func (c *Client) Watch(prefix string, changes chan string, stop chan bool) {
+	defer close(changes)
+	prefix = strings.Trim(prefix, "/")
+	var waitIndex uint64 = 0
+	var retryTime int64 = retrySeed
+	for {
+		var err error
+		var response *etcd.Response
+		if response, err = c.client.Watch(prefix, waitIndex, true, nil, stop); err == nil {
+			waitIndex = response.EtcdIndex
+			retryTime = retrySeed
+			changes <- strings.TrimPrefix(strings.Trim(response.Node.Key, "/"), prefix)
+		} else if err == etcd.ErrWatchStoppedByUser {
+			err = nil
+			break
+		} else {
+			logger.Infof("watch on %s failed, retrying in %.1f seconds", prefix, retryTime/1000)
+			logger.Debugf("error was: %s", err)
+
+			select {
+			case <-time.After(time.Duration(retryTime) * time.Millisecond):
+			case <-stop:
+				break Loop
+			}
+
+			if retryTime < retryMax {
+				retryTime = int64(float64(retryTime) * float64(retryFactor))
+			} else {
+				retryTime = retryMax
+			}
+		}
+	}
 }

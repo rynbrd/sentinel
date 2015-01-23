@@ -106,7 +106,7 @@ func (watcher *Watcher) Name() string {
 
 // Execute the watcher as if an event was receieved.
 func (watcher *Watcher) Execute() error {
-	context, err := watcher.client.GetMaps(watcher.prefix, watcher.context, true)
+	context, err := watcher.client.Get(watcher.prefix, watcher.context)
 	if err != nil {
 		logger.Errorf("%s failed to retrieve context: %s", watcher.Name(), err)
 		return err

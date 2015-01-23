@@ -1,13 +1,7 @@
 package main
 
 import (
-	"github.com/coreos/go-etcd/etcd"
-	"strings"
 	"time"
-)
-
-const (
-	WatchRetry = 5
 )
 
 // A Listener waits for etcd key changes and sends watch events to its eventss.
@@ -36,41 +30,24 @@ func (w *Listener) Start(events []chan string) {
 	logger.Debugf("watching '%s'", key)
 
 	go func() {
-	Loop:
-		for {
-			join := make(chan bool)
-			responses := make(chan *etcd.Response)
-			go func() {
-				for {
-					response, open := <-responses
-					if !open {
-						break
-					}
-					logger.Debugf("key '%s' changed", response.Node.Key)
-					event := strings.Trim(strings.TrimPrefix(response.Node.Key, w.prefix), "/")
-					for _, eventChan := range events {
-						eventChan <- event
-					}
+		join := make(chan struct{})
+		changes := make(chan string)
+		go func() {
+			for {
+				change, open := <-changes
+				if !open {
+					break
 				}
-				join <- true
-				close(join)
-			}()
-
-			_, err := w.client.client.Watch(key, 0, true, responses, w.stop)
-			<-join
-
-			if err == etcd.ErrWatchStoppedByUser {
-				break Loop
-			} else {
-				logger.Errorf("watch on '%s' failed: %s", key, err)
-				logger.Infof("retrying in %ds", WatchRetry)
-				select {
-				case <-w.stop:
-					break Loop
-				case <-time.After(WatchRetry * time.Second):
+				for _, eventChan := range events {
+					eventChan <- change
 				}
 			}
-		}
+			close(join)
+		}()
+
+		w.client.Watch(key, changes, w.stop)
+		<-join
+
 		for _, eventChan := range events {
 			close(eventChan)
 		}
