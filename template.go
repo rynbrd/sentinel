@@ -21,11 +21,11 @@ func (t *Template) differs(fileA, fileB string) bool {
 	var err error
 	var hashA, hashB string
 	if hashA, err = hash.File(fileA); err != nil {
-		logger.Errorf("unable to hash %s", fileA)
+		logger.Debugf("unable to hash %s", fileA)
 		return true
 	}
 	if hashB, err = hash.File(fileB); err != nil {
-		logger.Errorf("unable to hash %s", fileB)
+		logger.Debugf("unable to hash %s", fileB)
 		return true
 	}
 	return hashA != hashB
