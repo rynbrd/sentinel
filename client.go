@@ -25,7 +25,7 @@ func joinPaths(paths ...string) string {
 			path = path + "/" + part
 		}
 	}
-	return path
+	return strings.Trim(path, "/")
 }
 
 // Return the base key name for a key path.
@@ -49,11 +49,9 @@ func getNodeValue(node *etcd.Node) interface{} {
 	}
 }
 
-// Convert the node tree to a map rooted at the prefix.
-func getNodeMap(prefix string, node *etcd.Node) map[string]interface{} {
-	prefix = strings.Trim(prefix, "/") + "/"
-	path := strings.TrimPrefix(strings.Trim(node.Key, "/"), prefix)
-	path = strings.Replace(path, "-", "_", -1)
+// Convert the node tree to a map.
+func getNodeMap(node *etcd.Node) map[string]interface{} {
+	path := strings.Replace(strings.Trim(node.Key, "/"), "-", "_", -1)
 	parts := strings.Split(path, "/")
 	base := parts[len(parts)-1]
 	dir := parts[:len(parts)-1]
@@ -72,7 +70,6 @@ func getNodeMap(prefix string, node *etcd.Node) map[string]interface{} {
 // etcd client wrapper.
 type Client struct {
 	client *etcd.Client
-	prefix string
 }
 
 // Create a new client.
@@ -85,7 +82,6 @@ func NewClient(config *settings.Settings) (*Client, error) {
 		uris[n] = strings.TrimRight(uri, "/")
 	}
 
-	prefix := config.StringDflt("prefix", "")
 	tlsKey := config.StringDflt("tls-key", "")
 	tlsCert := config.StringDflt("tls-cert", "")
 	tlsCaCert := config.StringDflt("tls-ca-cert", "")
@@ -102,15 +98,45 @@ func NewClient(config *settings.Settings) (*Client, error) {
 
 	return &Client{
 		client: etcdClient,
-		prefix: prefix,
 	}, nil
 }
 
-// Get a single key and convert it to a map. Returns an empty map if the is not found. Returns an error on failure.
-func (c *Client) getOne(prefix, key string) (map[string]interface{}, error) {
-	key = joinPaths(prefix, key)
+// Wait for the server to become available. The wait can be stopped by sending
+// a value to `stop` or closing it. Return true if the server came online or
+// false if the wait was canceled.
+func (c *Client) Wait(stop chan bool) bool {
+	var retryTime int64 = retrySeed
+	for {
+		if _, err := c.client.Get("/", false, false); err == nil {
+			logger.Debug("connected to server")
+			break
+		} else {
+			logger.Infof("waiting %.1f seconds for server", float64(retryTime)/1000.0)
+			logger.Debugf("error was: %s", err)
+
+			select {
+			case <-time.After(time.Duration(retryTime) * time.Millisecond):
+			case <-stop:
+				return false
+			}
+
+			if retryTime < retryMax {
+				retryTime = int64(float64(retryTime) * float64(retryFactor))
+			} else {
+				retryTime = retryMax
+			}
+		}
+	}
+	return true
+}
+
+// Get a single key and convert it to a map. Returns an empty map if the is not
+// found. Returns an error on failure.
+func (c *Client) getOne(key string) (map[string]interface{}, error) {
 	if response, err := c.client.Get(key, false, true); err == nil {
-		return getNodeMap(prefix, response.Node), nil
+		item := getNodeMap(response.Node)
+		logger.Debugf("'%s' == %v", key, item)
+		return item, nil
 	} else if etcdErr, ok := err.(*etcd.EtcdError); ok && etcdErr.ErrorCode == 100 {
 		return make(map[string]interface{}), nil
 	} else {
@@ -118,13 +144,13 @@ func (c *Client) getOne(prefix, key string) (map[string]interface{}, error) {
 	}
 }
 
-// Return a series of keys merged into a single value.
-func (c *Client) Get(prefix string, keys []string) (map[string]interface{}, error) {
+// Get a group of keys rooted and merge them into a single map.
+func (c *Client) Get(keys []string) (map[string]interface{}, error) {
 	var err error
 	mapping := make(map[string]interface{})
 	for _, key := range keys {
 		var keyMapping map[string]interface{}
-		if keyMapping, err = c.getOne(prefix, key); err == nil {
+		if keyMapping, err = c.getOne(key); err == nil {
 			mapping = mergemap.Merge(mapping, keyMapping)
 		} else {
 			break
@@ -138,6 +164,7 @@ func (c *Client) watchOne(prefix string, changes chan string, stop chan bool) {
 	prefix = strings.Trim(prefix, "/")
 	var waitIndex uint64 = 0
 	var retryTime int64 = retrySeed
+	logger.Debugf("watching '%s' for changes", prefix)
 
 Loop:
 	for {
@@ -146,6 +173,7 @@ Loop:
 		if response, err = c.client.Watch(prefix, waitIndex, true, nil, stop); err == nil {
 			waitIndex = response.EtcdIndex + 1
 			retryTime = retrySeed
+			logger.Debugf("%s changed, index was %d, action was %s", prefix, response.EtcdIndex, response.Action)
 			changes <- prefix
 		} else if err == etcd.ErrWatchStoppedByUser {
 			err = nil

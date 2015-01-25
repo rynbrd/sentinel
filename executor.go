@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os/exec"
 	"strings"
 )
@@ -9,6 +10,8 @@ import (
 // execution for a single watcher.
 type Executor struct {
 	Name      string
+	Prefix    string
+	Context   []string
 	Templates []Template
 	Command   []string
 }
@@ -21,9 +24,9 @@ func (ex *Executor) render(context map[string]interface{}) (changed bool, err er
 			return
 		}
 		if oneChanged {
-			logger.Debugf("%s tpl: rendered '%s' -> '%s'", ex.Name, tpl.Src, tpl.Dest)
+			logger.Debugf("%s: rendered '%s' -> '%s'", ex.Name, tpl.Src, tpl.Dest)
 		} else {
-			logger.Debugf("%s tpl: no change to '%s'", ex.Name, tpl.Dest)
+			logger.Debugf("%s: no change to '%s'", ex.Name, tpl.Dest)
 		}
 		changed = changed || oneChanged
 	}
@@ -33,7 +36,7 @@ func (ex *Executor) render(context map[string]interface{}) (changed bool, err er
 // Run the command.
 func (ex *Executor) run() error {
 	if len(ex.Command) == 0 {
-		logger.Debugf("%s has no command, skipping", ex.Name)
+		logger.Debugf("%s: command not set", ex.Name)
 		return nil
 	}
 
@@ -43,33 +46,54 @@ func (ex *Executor) run() error {
 
 	out, err := command.CombinedOutput()
 	if err == nil {
-		logger.Debugf("%s cmd ran", ex.Name)
+		logger.Debugf("%s: command ran", ex.Name)
 	} else {
-		logger.Errorf("%s cmd failed: %s", ex.Name, err)
+		logger.Errorf("%s: command failed: %s", ex.Name, err)
 	}
 	outStr := string(out)
 	if outStr != "" {
 		lines := strings.Split(outStr, "\n")
 		for _, line := range lines {
 			if err == nil {
-				logger.Debugf("%s cmd: %s", ex.Name, line)
+				logger.Debugf("out: %s", line)
 			} else {
-				logger.Errorf("%s cmd: %s", ex.Name, line)
+				logger.Errorf("out: %s", line)
 			}
 		}
 	}
 	return err
 }
 
-// Render the templates and execute the command. The command will be executed
-// if one of the template destinations changes or no templates are present in
-// the Executor. The `context` is passed to render the templates.
-func (ex *Executor) Execute(context map[string]interface{}) error {
+// Render the templates using the context retrieved from the provided `client`
+// and execute the command. The command will be executed if one of the template
+// destinations changes or no templates are present in the Watcher.
+func (ex *Executor) Execute(client *Client) error {
 	var err error
+	var context map[string]interface{}
+	if context, err = client.Get(ex.Context); err != nil {
+		logger.Errorf("%s: context failed: %s", ex.Name, err)
+		return err
+	}
+
+	for _, key := range strings.Split(ex.Prefix, "/") {
+		next, ok := context[key]
+		if !ok {
+			return fmt.Errorf("%s: context %s is invalid", ex.Name, ex.Prefix)
+		}
+		context, ok = next.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("%s: context %s is invalid", ex.Name, ex.Prefix)
+		}
+	}
+	logger.Debugf("%s: got context: %v", ex.Name, context)
+
 	run := true
 	if len(ex.Templates) > 0 {
 		run, err = ex.render(context)
 	}
+	logger.Debugf("run == %t", run)
+	logger.Debugf("err == %v", err)
+	logger.Debugf("cmd == %v", ex.Command)
 	if len(ex.Command) > 0 && err == nil && run {
 		err = ex.run()
 	}

@@ -9,37 +9,44 @@ import (
 	"syscall"
 )
 
-var (
-	logger *log.Logger = log.NewOrExit()
-	config *settings.Settings
-)
+var logger *log.Logger = log.NewOrExit()
 
-func configure() {
+// Print the formatted error and exit.
+func Fatalf(format string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, a...)
+	os.Exit(1)
+}
+
+// Do basic configuration and return the config object.
+func configure() *settings.Settings {
 	options := ParseOptionsOrExit(os.Args)
-	config = settings.LoadOrExit(options.Config)
-	config.Set("exec", options.Exec)
+	config := settings.LoadOrExit(options.Config)
 
+	// set config values from cli options
+	config.Set("exec", options.Exec)
 	if len(options.Etcd) > 0 {
 		config.Set("etcd.uris", options.Etcd)
 	}
-
 	if options.LogTarget != "" {
 		config.Set("logging.target", options.LogTarget)
 	}
-
 	if options.LogLevel != "" {
 		config.Set("logging.level", options.LogLevel)
 	}
 
-	logOpts := []log.Option{}
+	// configure the logger
 	if logTarget, err := config.String("logging.target"); err == nil {
-		logOpts = append(logOpts, log.Target(logTarget))
+		if logTargetObj, err := log.NewTarget(logTarget); err == nil {
+			logger.SetTarget(logTargetObj)
+		} else {
+			Fatalf("%s\n", err)
+		}
 	}
 	if logLevel, err := config.String("logging.level"); err == nil {
-		logOpts = append(logOpts, log.Level(logLevel))
+		logger.SetLevel(log.NewLevel(logLevel))
 	}
-	logger = log.NewOrExit(logOpts...)
 
+	// normalize etcd configuration
 	etcdURI := config.StringDflt("etcd.uri", "")
 	etcdURIs := config.StringArrayDflt("etcd.uris", []string{})
 	if len(etcdURIs) == 0 && etcdURI != "" {
@@ -47,52 +54,37 @@ func configure() {
 		rawURIs[0] = etcdURI
 		config.Set("etcd.uris", rawURIs)
 	}
+
+	// propogate default prefix to watchers
+	if prefix := config.StringDflt("etcd.prefix", ""); prefix != "" {
+		for _, watcher := range config.ObjectMapDflt("watchers", map[string]*settings.Settings{}) {
+			if watcherPrefix, err := watcher.String("prefix"); err == nil {
+				watcher.Set("prefix", joinPaths(prefix, watcherPrefix))
+			} else {
+				watcher.Set("prefix", prefix)
+			}
+		}
+	}
+
+	return config
 }
 
 // Run the app.
 func main() {
-	configure()
+	config := configure()
+	sentinel := ConfigSentinel(config)
+	stop := make(chan bool)
+	defer close(stop)
 
-	// begin startup sequence
-	client, err := NewClient(config.ObjectDflt("etcd", &settings.Settings{}))
-	if err != nil {
-		logger.Fatalf("failed to create client: %s", err)
-	}
-
-	fmt.Printf("Etcd Prefix: %s\n", client.prefix)
-	fmt.Printf("Etcd Client: %v\n", client.client)
-
-	watchersConfig := config.ObjectMapDflt("watchers", map[string]*settings.Settings{})
-	watchers := make([]*Watcher, 0, len(watchersConfig))
-	for _, watcherConfig := range watchersConfig {
-		if watcher, err := NewWatcher(client, watcherConfig); err == nil {
-			watchers = append(watchers, watcher)
-			fmt.Printf("Added watcher %s\n", watcher.Name())
-		} else {
-			logger.Fatal(err.Error())
-		}
-	}
-
-	manager := NewWatchManager(client, watchers)
-	fmt.Printf("WatchManager: %v\n", manager)
-
-	// exec
-	logger.Info("executing watchers")
-	exec := config.StringArrayDflt("exec", []string{})
-	if err = manager.Execute(exec); err != nil {
-		logger.Fatalf("failed to execute: %s", err)
-	}
-
-	if len(exec) == 0 {
-		// run
+	go func() {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
-		logger.Info("starting")
-		manager.Start()
-		logger.Info("started")
-		<-signals
-		logger.Info("stopping")
-		manager.Stop()
-		logger.Info("stopped")
+		sig := <-signals
+		stop <- true
+		logger.Infof("got signal %s, stopping", sig)
+	}()
+
+	if sentinel.Client.Wait(stop) {
+		sentinel.Run(stop)
 	}
 }
