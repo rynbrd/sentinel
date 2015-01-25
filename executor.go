@@ -67,7 +67,7 @@ func (ex *Executor) run() error {
 // Render the templates using the context retrieved from the provided `client`
 // and execute the command. The command will be executed if one of the template
 // destinations changes or no templates are present in the Watcher.
-func (ex *Executor) Execute(client *Client) error {
+func (ex *Executor) Execute(client Client) error {
 	var err error
 	var context map[string]interface{}
 	if context, err = client.Get(ex.Context); err != nil {

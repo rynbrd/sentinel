@@ -16,6 +16,25 @@ const (
 
 var DefaultEtcdURIs []string = []string{"http://172.17.42.1:4001/"}
 
+// Configuration server client interface.
+type Client interface {
+	// Wait for the server to become available. The wait can be stopped by
+	// sending a value to `stop` or closing it. Return true if the server came
+	// online or false if the wait was canceled.
+	Wait(stop chan bool) bool
+
+	// Recursively retrieve the values for a group of `keys`. The values are
+	// merged into a map of values structured as a tree.
+	Get(keys []string) (map[string]interface{}, error)
+
+	// Recursively watch each prefix in `prefixes` for changes. Send the name
+	// of the changed prefix to the `changes` channel. Stop watching and exit
+	// when `stop` receives `true`. Wait for the server to become available if
+	// it isn't. Each failed watch attempt will be followed by an increasingly
+	// longer period of sleep.
+	Watch(prefixes []string, changes chan string, stop chan bool)
+}
+
 // Join multiple key paths into one. The resulting path will be absolute.
 func joinPaths(paths ...string) string {
 	path := ""
@@ -67,13 +86,13 @@ func getNodeMap(node *etcd.Node) map[string]interface{} {
 	return mapping
 }
 
-// etcd client wrapper.
-type Client struct {
+// An etcd client implementation.
+type EtcdClient struct {
 	client *etcd.Client
 }
 
 // Create a new client.
-func NewClient(config *settings.Settings) (*Client, error) {
+func NewClient(config *settings.Settings) (Client, error) {
 	uris := config.StringArrayDflt("uris", []string{})
 	if len(uris) == 0 {
 		uris = DefaultEtcdURIs
@@ -96,7 +115,7 @@ func NewClient(config *settings.Settings) (*Client, error) {
 		etcdClient = etcd.NewClient(uris)
 	}
 
-	return &Client{
+	return &EtcdClient{
 		client: etcdClient,
 	}, nil
 }
@@ -104,7 +123,7 @@ func NewClient(config *settings.Settings) (*Client, error) {
 // Wait for the server to become available. The wait can be stopped by sending
 // a value to `stop` or closing it. Return true if the server came online or
 // false if the wait was canceled.
-func (c *Client) Wait(stop chan bool) bool {
+func (c *EtcdClient) Wait(stop chan bool) bool {
 	var retryTime int64 = retrySeed
 	for {
 		if _, err := c.client.Get("/", false, false); err == nil {
@@ -132,7 +151,7 @@ func (c *Client) Wait(stop chan bool) bool {
 
 // Get a single key and convert it to a map. Returns an empty map if the is not
 // found. Returns an error on failure.
-func (c *Client) getOne(key string) (map[string]interface{}, error) {
+func (c *EtcdClient) getOne(key string) (map[string]interface{}, error) {
 	if response, err := c.client.Get(key, false, true); err == nil {
 		item := getNodeMap(response.Node)
 		logger.Debugf("'%s' == %v", key, item)
@@ -145,7 +164,7 @@ func (c *Client) getOne(key string) (map[string]interface{}, error) {
 }
 
 // Get a group of keys rooted and merge them into a single map.
-func (c *Client) Get(keys []string) (map[string]interface{}, error) {
+func (c *EtcdClient) Get(keys []string) (map[string]interface{}, error) {
 	var err error
 	mapping := make(map[string]interface{})
 	for _, key := range keys {
@@ -160,7 +179,7 @@ func (c *Client) Get(keys []string) (map[string]interface{}, error) {
 }
 
 // Watch a single prefix for changes.
-func (c *Client) watchOne(prefix string, changes chan string, stop chan bool) {
+func (c *EtcdClient) watchOne(prefix string, changes chan string, stop chan bool) {
 	prefix = strings.Trim(prefix, "/")
 	var waitIndex uint64 = 0
 	var retryTime int64 = retrySeed
@@ -201,7 +220,7 @@ Loop:
 // changed prefix to the `changes` channel. Stop watching and exit when `stop`
 // receives `true`. Wait for the server to become available if it isn't. Each
 // failed attempt will be followed by an increasingly longer period of sleep.
-func (c *Client) Watch(prefixes []string, changes chan string, stop chan bool) {
+func (c *EtcdClient) Watch(prefixes []string, changes chan string, stop chan bool) {
 	defer close(changes)
 	type syncStore struct {
 		stop chan bool
