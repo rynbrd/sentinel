@@ -135,7 +135,6 @@ func (c *Client) Get(prefix string, keys []string) (map[string]interface{}, erro
 
 // Watch a single prefix for changes.
 func (c *Client) watchOne(prefix string, changes chan string, stop chan bool) {
-	defer close(changes)
 	prefix = strings.Trim(prefix, "/")
 	var waitIndex uint64 = 0
 	var retryTime int64 = retrySeed
@@ -145,14 +144,14 @@ Loop:
 		var err error
 		var response *etcd.Response
 		if response, err = c.client.Watch(prefix, waitIndex, true, nil, stop); err == nil {
-			waitIndex = response.EtcdIndex
+			waitIndex = response.EtcdIndex + 1
 			retryTime = retrySeed
 			changes <- prefix
 		} else if err == etcd.ErrWatchStoppedByUser {
 			err = nil
 			break
 		} else {
-			logger.Infof("watch on %s failed, retrying in %.1f seconds", prefix, retryTime/1000)
+			logger.Infof("watch on %s failed, retrying in %.1f seconds", prefix, float64(retryTime)/1000)
 			logger.Debugf("error was: %s", err)
 
 			select {
@@ -175,6 +174,7 @@ Loop:
 // receives `true`. Wait for the server to become available if it isn't. Each
 // failed attempt will be followed by an increasingly longer period of sleep.
 func (c *Client) Watch(prefixes []string, changes chan string, stop chan bool) {
+	defer close(changes)
 	type syncStore struct {
 		stop chan bool
 		join chan bool
@@ -186,10 +186,10 @@ func (c *Client) Watch(prefixes []string, changes chan string, stop chan bool) {
 			make(chan bool),
 			make(chan bool),
 		}
-		go func(sync syncStore) {
+		go func(prefix string, sync syncStore) {
 			c.watchOne(prefix, changes, sync.stop)
 			close(sync.join)
-		}(syncs[n])
+		}(prefix, syncs[n])
 	}
 
 	<-stop

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	validURI = "http://127.0.0.1:4001"
+	validURI   = "http://127.0.0.1:4001"
 	invalidURI = "http://127.0.0.1:9999"
 )
 
