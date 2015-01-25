@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"gopkg.in/BlueDragonX/go-log.v0"
 	"gopkg.in/BlueDragonX/go-settings.v0"
 	"os"
@@ -10,12 +9,6 @@ import (
 )
 
 var logger *log.Logger = log.NewOrExit()
-
-// Print the formatted error and exit.
-func Fatalf(format string, a ...interface{}) {
-	fmt.Fprintf(os.Stderr, format, a...)
-	os.Exit(1)
-}
 
 // Do basic configuration and return the config object.
 func configure() *settings.Settings {
@@ -59,7 +52,7 @@ func configure() *settings.Settings {
 	if prefix := config.StringDflt("etcd.prefix", ""); prefix != "" {
 		for _, watcher := range config.ObjectMapDflt("watchers", map[string]*settings.Settings{}) {
 			if watcherPrefix, err := watcher.String("prefix"); err == nil {
-				watcher.Set("prefix", joinPaths(prefix, watcherPrefix))
+				watcher.Set("prefix", JoinPath(prefix, watcherPrefix))
 			} else {
 				watcher.Set("prefix", prefix)
 			}

@@ -20,13 +20,6 @@ func ConfigTemplates(configs []*settings.Settings) []Template {
 	return templates
 }
 
-func resolvePaths(prefix string, keys []string) []string {
-	for n, key := range keys {
-		keys[n] = joinPaths(prefix, key)
-	}
-	return keys
-}
-
 func ConfigSentinel(config *settings.Settings) *Sentinel {
 	client, err := NewClient(config.ObjectDflt("etcd", &settings.Settings{}))
 	if err != nil {
@@ -45,8 +38,8 @@ func ConfigSentinel(config *settings.Settings) *Sentinel {
 
 	for name, watcher := range watchers {
 		prefix := watcher.StringDflt("prefix", "")
-		watch := resolvePaths(prefix, watcher.StringArrayDflt("watch", []string{}))
-		context := resolvePaths(prefix, watcher.StringArrayDflt("context", []string{}))
+		watch := ResolvePaths(prefix, watcher.StringArrayDflt("watch", []string{}))
+		context := ResolvePaths(prefix, watcher.StringArrayDflt("context", []string{}))
 
 		templatesConfig, err := watcher.ObjectArray("templates")
 		if err != nil {

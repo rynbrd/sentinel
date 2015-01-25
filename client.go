@@ -35,18 +35,6 @@ type Client interface {
 	Watch(prefixes []string, changes chan string, stop chan bool)
 }
 
-// Join multiple key paths into one. The resulting path will be absolute.
-func joinPaths(paths ...string) string {
-	path := ""
-	for _, part := range paths {
-		part = strings.Trim(part, "/")
-		if part != "" {
-			path = path + "/" + part
-		}
-	}
-	return strings.Trim(path, "/")
-}
-
 // Return the base key name for a key path.
 func getKeyName(path string) string {
 	parts := strings.Split(path, "/")
