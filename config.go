@@ -66,11 +66,11 @@ func ConfigSentinel(config *settings.Settings) *Sentinel {
 		}
 
 		executor := &Executor{
-			Name: name,
-			Prefix: prefix,
-			Context: context,
+			Name:      name,
+			Prefix:    prefix,
+			Context:   context,
 			Templates: templates,
-			Command: command,
+			Command:   command,
 		}
 
 		sentinel.Add(watch, executor)
