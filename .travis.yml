@@ -9,3 +9,4 @@ before_install:
 - ./build
 - ./bin/etcd &
 - cd -
+- sleep 1
