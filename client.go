@@ -1,13 +1,5 @@
 package main
 
-import (
-	"errors"
-	"gopkg.in/BlueDragonX/go-settings.v0"
-	"strings"
-)
-
-var UnsupportedClientConfig error = errors.New("unsupported client configuration")
-
 // Configuration server client interface.
 type Client interface {
 	// Wait for the server to become available. The wait can be stopped by
@@ -25,19 +17,4 @@ type Client interface {
 	// it isn't. Each failed watch attempt will be followed by an increasingly
 	// longer period of sleep.
 	Watch(prefixes []string, changes chan string, stop chan bool)
-}
-
-func NewClient(config *settings.Settings) (Client, error) {
-	names := strings.Split(config.Key, "/")
-	if len(names) == 0 {
-		return nil, UnsupportedClientConfig
-	}
-
-	name := names[len(names)-1]
-	switch name {
-	case "etcd":
-		return NewEtcdClient(config)
-	default:
-		return nil, UnsupportedClientConfig
-	}
 }

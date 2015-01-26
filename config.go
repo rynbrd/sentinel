@@ -21,7 +21,7 @@ func ConfigTemplates(configs []*settings.Settings) []Template {
 }
 
 func ConfigSentinel(config *settings.Settings) *Sentinel {
-	client, err := NewClient(config.ObjectDflt("etcd", &settings.Settings{}))
+	client, err := NewEtcdClient(config.ObjectDflt("etcd", &settings.Settings{}))
 	if err != nil {
 		logger.Fatalf("failed to create client: %s", err)
 	}
