@@ -211,6 +211,7 @@ func TestEtcdClientWatch(t *testing.T) {
 		close(join)
 	}()
 
+	time.Sleep(50 * time.Millisecond)
 	go func() {
 		rawClient.Set("/test/index", "2", 0)
 	}()
