@@ -69,8 +69,8 @@ func TestExecutorEmpty(t *testing.T) {
 
 	exec := TemplateExecutor{
 		name:    "test",
-		Prefix:  "sentinel",
-		Context: []string{"sentinel/context_a"},
+		prefix:  "sentinel",
+		context: []string{"sentinel/context_a"},
 	}
 
 	if err := exec.Execute(tc.Client); err != nil {
@@ -85,8 +85,8 @@ func TestExecutorCommand(t *testing.T) {
 
 	exec := TemplateExecutor{
 		name:    "test",
-		Prefix:  "sentinel",
-		Context: []string{},
+		prefix:  "sentinel",
+		context: []string{},
 		Command: []string{"bash", "-c", "echo hello > " + out},
 	}
 
@@ -117,8 +117,8 @@ func TestExecutorSingleContext(t *testing.T) {
 
 	exec := TemplateExecutor{
 		name:      "test",
-		Prefix:    "sentinel",
-		Context:   []string{"sentinel/context_a"},
+		prefix:    "sentinel",
+		context:   []string{"sentinel/context_a"},
 		Templates: []Template{tc.Template},
 	}
 
@@ -148,8 +148,8 @@ func TestExecutorMultiContext(t *testing.T) {
 
 	exec := TemplateExecutor{
 		name:      "test",
-		Prefix:    "sentinel",
-		Context:   []string{"sentinel/context_a"},
+		prefix:    "sentinel",
+		context:   []string{"sentinel/context_a"},
 		Templates: []Template{tc.Template},
 	}
 
@@ -180,8 +180,8 @@ func TestExecutorChanged(t *testing.T) {
 
 	exec := TemplateExecutor{
 		name:      "test",
-		Prefix:    "sentinel",
-		Context:   []string{"sentinel/context_a"},
+		prefix:    "sentinel",
+		context:   []string{"sentinel/context_a"},
 		Templates: []Template{tc.Template},
 		Command:   []string{"bash", "-c", "echo hello > " + out},
 	}

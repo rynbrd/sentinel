@@ -60,8 +60,8 @@ func ConfigSentinel(config *settings.Settings) *Sentinel {
 
 		executor := &TemplateExecutor{
 			name:      name,
-			Prefix:    prefix,
-			Context:   context,
+			prefix:    prefix,
+			context:   context,
 			Templates: templates,
 			Command:   command,
 		}

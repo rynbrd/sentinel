@@ -21,8 +21,8 @@ type Executor interface {
 // are provided the command will always be executed.
 type TemplateExecutor struct {
 	name      string
-	Prefix    string
-	Context   []string
+	prefix    string
+	context   []string
 	Templates []Template
 	Command   []string
 }
@@ -94,13 +94,13 @@ func (ex *TemplateExecutor) Execute(client Client) error {
 	var context map[string]interface{}
 
 	logger.Debugf("%s: executing", ex.name)
-	if ex.Context == nil || len(ex.Context) == 0 {
+	if ex.context == nil || len(ex.context) == 0 {
 		context = map[string]interface{}{}
-	} else if context, err = client.Get(ex.Context); err != nil {
+	} else if context, err = client.Get(ex.context); err != nil {
 		logger.Errorf("%s: context get failed: %s", ex.name, err)
 		return err
 	} else {
-		for _, key := range strings.Split(ex.Prefix, "/") {
+		for _, key := range strings.Split(ex.prefix, "/") {
 			next, ok := context[key]
 			if !ok {
 				break
