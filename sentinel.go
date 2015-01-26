@@ -23,7 +23,7 @@ func (s *Sentinel) Add(keys []string, executor Executor) {
 	name := executor.Name()
 	s.executorsByName[name] = executor
 	for _, key := range keys {
-		logger.Debugf("execute %s on '%s'", name, key)
+		logger.Debugf("changes to %s will execute %s", key, name)
 		executorArray, ok := s.executorsByKey[key]
 		if !ok {
 			executorArray = make([]Executor, 0, 1)

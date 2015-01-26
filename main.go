@@ -65,11 +65,12 @@ func configure() *settings.Settings {
 // Run the app.
 func main() {
 	config := configure()
+	logger.Info("starting sentinel")
+
 	sentinel := ConfigSentinel(config)
 	stop := make(chan bool)
 	defer close(stop)
 
-	logger.Info("starting sentinel")
 	go func() {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
