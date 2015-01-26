@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/peterbourgon/mergemap"
 	"gopkg.in/BlueDragonX/go-settings.v0"
@@ -181,11 +182,20 @@ Loop:
 			retryTime = retrySeed
 			logger.Debugf("prefix %s changed, index was %d, action was %s", prefix, response.EtcdIndex, response.Action)
 			changes <- prefix
+		} else if _, ok := err.(*json.SyntaxError); ok {
+			// This is caused by the connection timing out thus cutting the
+			// stream the JSON encoder is readong from. I would expect this to
+			// be common on HTTP long-pulls especially if a proxy is involved.
+			// On the other hand I am unsure whether changes to the go-etcd
+			// client library or the etcd server itself would mitigate this
+			// issue when directly connected. Either way we will retry the
+			// watch using the same index so as not to miss any changes.
+			logger.Debugf("watch timed out, retrying immediately")
 		} else if err == etcd.ErrWatchStoppedByUser {
 			err = nil
 			break
 		} else {
-			logger.Infof("watch on %s failed, retrying in %.1f seconds", prefix, float64(retryTime)/1000)
+			logger.Errorf("watch on %s failed, retrying in %.1f seconds", prefix, float64(retryTime)/1000)
 			logger.Debugf("error was: %s", err)
 
 			select {
