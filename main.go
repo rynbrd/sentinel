@@ -69,6 +69,7 @@ func main() {
 	stop := make(chan bool)
 	defer close(stop)
 
+	logger.Info("starting sentinel")
 	go func() {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)

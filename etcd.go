@@ -96,10 +96,10 @@ func (c *EtcdClient) Wait(stop chan bool) bool {
 	var retryTime int64 = retrySeed
 	for {
 		if _, err := c.client.Get("/", false, false); err == nil {
-			logger.Debug("connected to server")
+			logger.Debug("connected to etcd")
 			break
 		} else {
-			logger.Infof("waiting %.1f seconds for server", float64(retryTime)/1000.0)
+			logger.Infof("waiting %.1f seconds for etcd", float64(retryTime)/1000.0)
 			logger.Debugf("error was: %s", err)
 
 			select {
@@ -123,7 +123,6 @@ func (c *EtcdClient) Wait(stop chan bool) bool {
 func (c *EtcdClient) getOne(key string) (map[string]interface{}, error) {
 	if response, err := c.client.Get(key, false, true); err == nil {
 		item := getNodeMap(response.Node)
-		logger.Debugf("'%s' == %v", key, item)
 		return item, nil
 	} else if etcdErr, ok := err.(*etcd.EtcdError); ok && etcdErr.ErrorCode == 100 {
 		return make(map[string]interface{}), nil
@@ -152,7 +151,7 @@ func (c *EtcdClient) watchOne(prefix string, changes chan string, stop chan bool
 	prefix = strings.Trim(prefix, "/")
 	var waitIndex uint64 = 0
 	var retryTime int64 = retrySeed
-	logger.Debugf("watching '%s' for changes", prefix)
+	logger.Debugf("watching %s for changes", prefix)
 
 Loop:
 	for {
@@ -161,7 +160,7 @@ Loop:
 		if response, err = c.client.Watch(prefix, waitIndex, true, nil, stop); err == nil {
 			waitIndex = response.EtcdIndex + 1
 			retryTime = retrySeed
-			logger.Debugf("%s changed, index was %d, action was %s", prefix, response.EtcdIndex, response.Action)
+			logger.Debugf("prefix %s changed, index was %d, action was %s", prefix, response.EtcdIndex, response.Action)
 			changes <- prefix
 		} else if err == etcd.ErrWatchStoppedByUser {
 			err = nil

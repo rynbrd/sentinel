@@ -30,7 +30,9 @@ type TemplateExecutor struct {
 // Render the templates. Return true if any templates changed.
 func (ex *TemplateExecutor) render(context map[string]interface{}) (changed bool, err error) {
 	var oneChanged bool
-	if ex.Templates == nil {
+	if ex.Templates == nil || len(ex.Templates) == 0 {
+		logger.Debugf("%s: no templates to render", ex.name)
+		changed = true
 		return
 	}
 
@@ -39,9 +41,9 @@ func (ex *TemplateExecutor) render(context map[string]interface{}) (changed bool
 			return
 		}
 		if oneChanged {
-			logger.Debugf("%s: rendered '%s' -> '%s'", ex.Name, tpl.Src, tpl.Dest)
+			logger.Debugf("%s: rendered '%s' -> '%s'", ex.name, tpl.Src, tpl.Dest)
 		} else {
-			logger.Debugf("%s: no change to '%s'", ex.Name, tpl.Dest)
+			logger.Debugf("%s: no change to '%s'", ex.name, tpl.Dest)
 		}
 		changed = changed || oneChanged
 	}
@@ -51,7 +53,7 @@ func (ex *TemplateExecutor) render(context map[string]interface{}) (changed bool
 // Run the command.
 func (ex *TemplateExecutor) run() error {
 	if len(ex.Command) == 0 {
-		logger.Debugf("%s: command not set", ex.Name)
+		logger.Debugf("%s: no command to call", ex.name)
 		return nil
 	}
 
@@ -61,18 +63,18 @@ func (ex *TemplateExecutor) run() error {
 
 	out, err := command.CombinedOutput()
 	if err == nil {
-		logger.Debugf("%s: command ran", ex.Name)
+		logger.Debugf("%s: command %v ran", ex.name, ex.Command)
 	} else {
-		logger.Errorf("%s: command failed: %s", ex.Name, err)
+		logger.Errorf("%s: command %v failed: %s", ex.name, ex.Command, err)
 	}
 	outStr := string(out)
 	if outStr != "" {
 		lines := strings.Split(outStr, "\n")
 		for _, line := range lines {
 			if err == nil {
-				logger.Debugf("out: %s", line)
+				logger.Debugf("%s> %s", ex.name, line)
 			} else {
-				logger.Errorf("out: %s", line)
+				logger.Errorf("%s> %s", ex.name, line)
 			}
 		}
 	}
@@ -91,30 +93,28 @@ func (ex *TemplateExecutor) Execute(client Client) error {
 	var err error
 	var context map[string]interface{}
 
+	logger.Debugf("%s: executing", ex.name)
 	if ex.Context == nil || len(ex.Context) == 0 {
 		context = map[string]interface{}{}
 	} else if context, err = client.Get(ex.Context); err != nil {
-		logger.Errorf("%s: context failed: %s", ex.Name, err)
+		logger.Errorf("%s: context get failed: %s", ex.name, err)
 		return err
 	} else {
 		for _, key := range strings.Split(ex.Prefix, "/") {
 			next, ok := context[key]
 			if !ok {
-				return fmt.Errorf("%s: context %s is invalid", ex.Name, ex.Prefix)
+				break
 			}
 			context, ok = next.(map[string]interface{})
 			if !ok {
-				return fmt.Errorf("%s: context %s is invalid", ex.Name, ex.Prefix)
+				return fmt.Errorf("%s: context is invalid", ex.name)
 			}
 		}
 	}
-	logger.Debugf("%s: got context: %v", ex.Name, context)
 
 	run := true
-	if len(ex.Templates) > 0 {
-		run, err = ex.render(context)
-	}
-	if len(ex.Command) > 0 && err == nil && run {
+	run, err = ex.render(context)
+	if run && err == nil {
 		err = ex.run()
 	}
 	return err
