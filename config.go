@@ -58,8 +58,8 @@ func ConfigSentinel(config *settings.Settings) *Sentinel {
 			logger.Fatalf("watcher %s templates and command both missing")
 		}
 
-		executor := &Executor{
-			Name:      name,
+		executor := &TemplateExecutor{
+			name:      name,
 			Prefix:    prefix,
 			Context:   context,
 			Templates: templates,

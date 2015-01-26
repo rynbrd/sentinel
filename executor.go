@@ -6,10 +6,21 @@ import (
 	"strings"
 )
 
-// An Executor is responsible for performing template rendering and command
-// execution for a single watcher.
-type Executor struct {
-	Name      string
+// An Executor is responsible for executed to perform some action when a
+// watched key is changed.
+type Executor interface {
+	// Return the unique name of the executor.
+	Name() string
+
+	// Called to run the executor's actions.
+	Execute(client Client) error
+}
+
+// A Executor performs template rendering. It will optionally execute a command
+// when one or more changes are made by the templating system. If no templates
+// are provided the command will always be executed.
+type TemplateExecutor struct {
+	name      string
 	Prefix    string
 	Context   []string
 	Templates []Template
@@ -17,7 +28,7 @@ type Executor struct {
 }
 
 // Render the templates. Return true if any templates changed.
-func (ex *Executor) render(context map[string]interface{}) (changed bool, err error) {
+func (ex *TemplateExecutor) render(context map[string]interface{}) (changed bool, err error) {
 	var oneChanged bool
 	if ex.Templates == nil {
 		return
@@ -38,7 +49,7 @@ func (ex *Executor) render(context map[string]interface{}) (changed bool, err er
 }
 
 // Run the command.
-func (ex *Executor) run() error {
+func (ex *TemplateExecutor) run() error {
 	if len(ex.Command) == 0 {
 		logger.Debugf("%s: command not set", ex.Name)
 		return nil
@@ -68,10 +79,15 @@ func (ex *Executor) run() error {
 	return err
 }
 
+// Return the unique name of the executor.
+func (ex *TemplateExecutor) Name() string {
+	return ex.name
+}
+
 // Render the templates using the context retrieved from the provided `client`
 // and execute the command. The command will be executed if one of the template
 // destinations changes or no templates are present in the Watcher.
-func (ex *Executor) Execute(client Client) error {
+func (ex *TemplateExecutor) Execute(client Client) error {
 	var err error
 	var context map[string]interface{}
 

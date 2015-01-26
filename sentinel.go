@@ -6,24 +6,26 @@ import (
 
 type Sentinel struct {
 	Client          Client
-	executorsByName map[string]*Executor
-	executorsByKey  map[string][]*Executor
+	executorsByName map[string]Executor
+	executorsByKey  map[string][]Executor
 }
 
 // Add an `executor` for the provided `keys`.
-func (s *Sentinel) Add(keys []string, executor *Executor) {
+func (s *Sentinel) Add(keys []string, executor Executor) {
 	if s.executorsByName == nil {
-		s.executorsByName = make(map[string]*Executor)
+		s.executorsByName = make(map[string]Executor)
 	}
 	if s.executorsByKey == nil {
-		s.executorsByKey = make(map[string][]*Executor)
+		s.executorsByKey = make(map[string][]Executor)
 	}
-	s.executorsByName[executor.Name] = executor
+
+	name := executor.Name()
+	s.executorsByName[name] = executor
 	for _, key := range keys {
-		logger.Debugf("execute %s on '%s'", executor.Name, key)
+		logger.Debugf("execute %s on '%s'", name, key)
 		executorArray, ok := s.executorsByKey[key]
 		if !ok {
-			executorArray = make([]*Executor, 0, 1)
+			executorArray = make([]Executor, 0, 1)
 		}
 		s.executorsByKey[key] = append(executorArray, executor)
 	}
@@ -39,7 +41,7 @@ func (s *Sentinel) ExecByName(name string) error {
 }
 
 // Look up a executors by prefix and execute them.
-func (s *Sentinel) ExecByPrefix(prefix string) []error {
+func (s *Sentinel) ExecByKey(prefix string) []error {
 	executors, ok := s.executorsByKey[prefix]
 	if !ok {
 		return []error{}
@@ -81,7 +83,7 @@ Loop:
 			break Loop
 		case prefix := <-changes:
 			logger.Debugf("prefix '%s' changed", prefix)
-			if errs := s.ExecByPrefix(prefix); len(errs) > 0 {
+			if errs := s.ExecByKey(prefix); len(errs) > 0 {
 				for _, err := range errs {
 					logger.Error(err.Error())
 				}

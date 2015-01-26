@@ -8,6 +8,21 @@ import (
 	"testing"
 )
 
+type MockExecutor struct {
+	name  string
+	Calls int
+	Error error
+}
+
+func (ex *MockExecutor) Name() string {
+	return ex.name
+}
+
+func (ex *MockExecutor) Execute(client Client) error {
+	ex.Calls++
+	return ex.Error
+}
+
 type ExecutorTestCase struct {
 	T         *testing.T
 	Client    *MockClient
@@ -52,8 +67,8 @@ func TestExecutorEmpty(t *testing.T) {
 	tc := NewExecutorTestCase(t)
 	defer tc.Close()
 
-	exec := Executor{
-		Name:    "test",
+	exec := TemplateExecutor{
+		name:    "test",
 		Prefix:  "sentinel",
 		Context: []string{"sentinel/context_a"},
 	}
@@ -68,8 +83,8 @@ func TestExecutorCommand(t *testing.T) {
 	defer tc.Close()
 	out := path.Join(tc.Directory, "out")
 
-	exec := Executor{
-		Name:    "test",
+	exec := TemplateExecutor{
+		name:    "test",
 		Prefix:  "sentinel",
 		Context: []string{},
 		Command: []string{"bash", "-c", "echo hello > " + out},
@@ -100,8 +115,8 @@ func TestExecutorSingleContext(t *testing.T) {
 		},
 	}
 
-	exec := Executor{
-		Name:      "test",
+	exec := TemplateExecutor{
+		name:      "test",
 		Prefix:    "sentinel",
 		Context:   []string{"sentinel/context_a"},
 		Templates: []Template{tc.Template},
@@ -131,8 +146,8 @@ func TestExecutorMultiContext(t *testing.T) {
 	tc := NewExecutorTestCase(t)
 	defer tc.Close()
 
-	exec := Executor{
-		Name:      "test",
+	exec := TemplateExecutor{
+		name:      "test",
 		Prefix:    "sentinel",
 		Context:   []string{"sentinel/context_a"},
 		Templates: []Template{tc.Template},
@@ -163,8 +178,8 @@ func TestExecutorChanged(t *testing.T) {
 	defer tc.Close()
 	out := path.Join(tc.Directory, "out")
 
-	exec := Executor{
-		Name:      "test",
+	exec := TemplateExecutor{
+		name:      "test",
 		Prefix:    "sentinel",
 		Context:   []string{"sentinel/context_a"},
 		Templates: []Template{tc.Template},
