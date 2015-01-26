@@ -32,18 +32,9 @@ func (s *Sentinel) Add(keys []string, executor Executor) {
 	}
 }
 
-// Look up an executor by name and execute it.
-func (s *Sentinel) ExecByName(name string) error {
-	if executor, ok := s.executorsByName[name]; ok {
-		return executor.Execute(s.Client)
-	} else {
-		return fmt.Errorf("executor %s not found", name)
-	}
-}
-
-// Look up a executors by prefix and execute them.
-func (s *Sentinel) ExecByKey(prefix string) []error {
-	executors, ok := s.executorsByKey[prefix]
+// Look up a executors by key and execute them.
+func (s *Sentinel) executeKey(key string) []error {
+	executors, ok := s.executorsByKey[key]
 	if !ok {
 		return []error{}
 	}
@@ -114,7 +105,7 @@ Loop:
 			break Loop
 		case prefix := <-changes:
 			logger.Debugf("prefix '%s' changed", prefix)
-			if errs := s.ExecByKey(prefix); len(errs) > 0 {
+			if errs := s.executeKey(prefix); len(errs) > 0 {
 				for _, err := range errs {
 					logger.Error(err.Error())
 				}

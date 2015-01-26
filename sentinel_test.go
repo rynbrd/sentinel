@@ -42,7 +42,7 @@ func TestSentinelAdd(t *testing.T) {
 	}
 }
 
-func TestSentinelExecByName(t *testing.T) {
+func TestSentinelExecute(t *testing.T) {
 	client := &MockClient{}
 	ex1 := &MockExecutor{name: "mock1"}
 	ex2 := &MockExecutor{name: "mock2"}
@@ -52,28 +52,60 @@ func TestSentinelExecByName(t *testing.T) {
 	s.Add(keys1, ex1)
 	s.Add(keys2, ex2)
 
-	if err := s.ExecByName("mock1"); err != nil {
+	if err := s.Execute([]string{"mock1"}); err != nil {
 		t.Error(err)
 	}
 	if ex1.Calls != 1 {
 		t.Error("executor not called")
 	}
+	if ex2.Calls != 0 {
+		t.Error("executor was called")
+	}
 
-	wantErr := errors.New("error!")
-	ex1.Error = wantErr
-	if err := s.ExecByName("mock1"); err != wantErr {
-		t.Error("%v != %v", wantErr, err)
+	if err := s.Execute([]string{"mock1", "mock2"}); err != nil {
+		t.Error(err)
 	}
 	if ex1.Calls != 2 {
 		t.Error("executor not called")
 	}
+	if ex2.Calls != 1 {
+		t.Error("executor not called")
+	}
 
-	if err := s.ExecByName("sirnotappearinginthisfilm"); err == nil {
-		t.Error("no error returned on invalid name")
+	ex1.Error = errors.New("oops!")
+	if err := s.Execute([]string{"mock1", "mock2"}); err == nil {
+		t.Error("no error returned")
+	}
+	if ex1.Calls != 3 {
+		t.Error("executor not called")
+	}
+	if ex2.Calls != 2 {
+		t.Error("executor not called")
+	}
+
+	ex1.Error = nil
+	if err := s.Execute([]string{}); err != nil {
+		t.Error(err)
+	}
+	if ex1.Calls != 4 {
+		t.Error("executor not called")
+	}
+	if ex2.Calls != 3 {
+		t.Error("executor not called")
+	}
+
+	if err := s.Execute([]string{"sirnotappearinginthisfilm"}); err == nil {
+		t.Error("no error returned")
+	}
+	if ex1.Calls != 4 {
+		t.Error("executor called")
+	}
+	if ex2.Calls != 3 {
+		t.Error("executor called")
 	}
 }
 
-func TestSentinelExecByKey(t *testing.T) {
+func TestSentinelExecuteKey(t *testing.T) {
 	client := &MockClient{}
 	wantErr := errors.New("error!")
 	ex1 := &MockExecutor{name: "mock1"}
@@ -84,7 +116,7 @@ func TestSentinelExecByKey(t *testing.T) {
 	s.Add(keys1, ex1)
 	s.Add(keys2, ex2)
 
-	if errs := s.ExecByKey("1"); len(errs) != 0 {
+	if errs := s.executeKey("1"); len(errs) != 0 {
 		t.Error(errs)
 	}
 	if ex1.Calls != 1 {
@@ -94,7 +126,7 @@ func TestSentinelExecByKey(t *testing.T) {
 		t.Error("executor2 called")
 	}
 
-	if errs := s.ExecByKey("2"); len(errs) != 1 {
+	if errs := s.executeKey("2"); len(errs) != 1 {
 		t.Error(errs)
 	}
 	if ex1.Calls != 2 {
