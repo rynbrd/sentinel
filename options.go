@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+var DefaultConfigFile string = "config.yml"
+
 // A string array option capable of being appended to.
 type stringsOpt []string
 
@@ -37,12 +39,12 @@ func ParseOptionsOrExit(args []string) *Options {
 	var logLevel string
 
 	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
-	flags.StringVar(&config, "config", "config.yml", "YAML configuration file.")
+	flags.StringVar(&config, "config", DefaultConfigFile, "YAML configuration file.")
 	flags.Var(&exec, "exec", "Execute a watcher and exit. May be provided multiple times.")
 	flags.Var(&etcd, "etcd", "The URI of etcd. May be provided multiple times.")
 	flags.StringVar(&prefix, "prefix", "", "A prefix to prepend to all key paths.")
-	flags.StringVar(&logTarget, "log-target", "stderr", "The target to log to.")
-	flags.StringVar(&logLevel, "log-level", "info", "The level of logs to log.")
+	flags.StringVar(&logTarget, "log-target", "", "The target to log to.")
+	flags.StringVar(&logLevel, "log-level", "", "The level of logs to log.")
 	flags.Parse(args[1:])
 
 	return &Options{
