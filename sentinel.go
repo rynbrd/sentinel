@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Sentinel struct {
@@ -63,6 +64,36 @@ func (s *Sentinel) getPrefixes() []string {
 		prefixes = append(prefixes, prefix)
 	}
 	return prefixes
+}
+
+// Execute the named executors. If `names` is empty all executors will be run.
+// A failed executor will not cause subsequent executors to be skipped. Return
+// an error on failure.
+func (s *Sentinel) Execute(names []string) error {
+	failed := []string{}
+	if len(names) == 0 {
+		for _, executor := range s.executorsByName {
+			if executor.Execute(s.Client) != nil {
+				failed = append(failed, executor.Name())
+			}
+		}
+	} else {
+		for _, name := range names {
+			if _, ok := s.executorsByName[name]; !ok {
+				return fmt.Errorf("executor %s not found", name)
+			}
+		}
+		for _, name := range names {
+			executor := s.executorsByName[name]
+			if executor.Execute(s.Client) != nil {
+				failed = append(failed, executor.Name())
+			}
+		}
+	}
+	if len(failed) > 0 {
+		return fmt.Errorf("executors failed: %s", strings.Join(failed, ", "))
+	}
+	return nil
 }
 
 func (s *Sentinel) Run(stop chan bool) {

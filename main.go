@@ -79,6 +79,15 @@ func main() {
 	}()
 
 	if sentinel.Client.Wait(stop) {
-		sentinel.Run(stop)
+		exec := config.StringArrayDflt("exec", []string{})
+		if err := sentinel.Execute(exec); err != nil {
+			logger.Error(err.Error())
+			os.Exit(1)
+		}
+		if len(exec) > 0 {
+			logger.Info("execution complete")
+		} else {
+			sentinel.Run(stop)
+		}
 	}
 }
