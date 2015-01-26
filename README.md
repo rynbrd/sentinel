@@ -2,6 +2,8 @@ Sentinel
 ========
 Triggered templating and command execution for etcd.
 
+[![Build Status](https://travis-ci.org/BlueDragonX/sentinel.svg?branch=master)](https://travis-ci.org/BlueDragonX/sentinel)
+
 How It Works
 ------------
 Sentinel allows you to trigger template generation and command execution off of
