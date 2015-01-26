@@ -19,6 +19,10 @@ type Executor struct {
 // Render the templates. Return true if any templates changed.
 func (ex *Executor) render(context map[string]interface{}) (changed bool, err error) {
 	var oneChanged bool
+	if ex.Templates == nil {
+		return
+	}
+
 	for _, tpl := range ex.Templates {
 		if oneChanged, err = tpl.Render(context); err != nil {
 			return
@@ -30,7 +34,7 @@ func (ex *Executor) render(context map[string]interface{}) (changed bool, err er
 		}
 		changed = changed || oneChanged
 	}
-	return changed, nil
+	return
 }
 
 // Run the command.
@@ -70,19 +74,22 @@ func (ex *Executor) run() error {
 func (ex *Executor) Execute(client Client) error {
 	var err error
 	var context map[string]interface{}
-	if context, err = client.Get(ex.Context); err != nil {
+
+	if ex.Context == nil || len(ex.Context) == 0 {
+		context = map[string]interface{}{}
+	} else if context, err = client.Get(ex.Context); err != nil {
 		logger.Errorf("%s: context failed: %s", ex.Name, err)
 		return err
-	}
-
-	for _, key := range strings.Split(ex.Prefix, "/") {
-		next, ok := context[key]
-		if !ok {
-			return fmt.Errorf("%s: context %s is invalid", ex.Name, ex.Prefix)
-		}
-		context, ok = next.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("%s: context %s is invalid", ex.Name, ex.Prefix)
+	} else {
+		for _, key := range strings.Split(ex.Prefix, "/") {
+			next, ok := context[key]
+			if !ok {
+				return fmt.Errorf("%s: context %s is invalid", ex.Name, ex.Prefix)
+			}
+			context, ok = next.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("%s: context %s is invalid", ex.Name, ex.Prefix)
+			}
 		}
 	}
 	logger.Debugf("%s: got context: %v", ex.Name, context)
@@ -91,9 +98,6 @@ func (ex *Executor) Execute(client Client) error {
 	if len(ex.Templates) > 0 {
 		run, err = ex.render(context)
 	}
-	logger.Debugf("run == %t", run)
-	logger.Debugf("err == %v", err)
-	logger.Debugf("cmd == %v", ex.Command)
 	if len(ex.Command) > 0 && err == nil && run {
 		err = ex.run()
 	}
