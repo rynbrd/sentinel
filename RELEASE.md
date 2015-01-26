@@ -1,3 +1,12 @@
+## v2.0.0
++ More CLI options. Use -h to see them all.
+* Connectivity related bug fixes:
+* Bug fix: Watches would fail and skip changes on loss of connectivity.
+* Bug fix: On start watchers would not be executed if no connection could be made.
+* Bug fix: Gracefully handle "unexpected end of JSON input" error.
+* Refactored and cleaner logging.
+* Refectored configuration system.
+
 ## v1.1.1
 * Execute command when no templates exist.
 
