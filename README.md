@@ -19,7 +19,6 @@ Installing
 This is a go-gettable package. It should be as simple as:
 
     go get github.com/BlueDragonX/sentinel
-    go install github.com/BlueDragonX/sentinel
 
 Configuring
 -----------
@@ -39,8 +38,8 @@ This section configures the connection to etcd. Available parameters are:
 - `uri` - The URI to connect to etcd at. Defaults to `http://172.17.42.1:4001/`.
 - `uris` - Connect to multiple etcd nodes. Used as an alternative to `uri` when
   redundancy is called for.
-- `prefix` - etcd key paths will be prefixed with this value. Defaults to an
-  empty string.
+- `prefix` - All etcd key paths will be prefixed with this value. Defaults to
+  an empty string.
 - `tls-key` - The path to the TLS private key to use when connecting. Must be
   provided to enable TLS.
 - `tls-cert` - The path to the TLS certificate to use when connecting. Must be
@@ -53,6 +52,10 @@ This section defines watchers to trigger off of etcd key changes. The watchers
 section is a mapping of watcher names to their configuration. Available watcher
 paremeters are:
 
+- `prefix` - Key paths will be prefixed with this value. This will have the
+  `etcd.prefix` value prepended to it. Defaults to an empty string. This allows
+  you to reuse a template across multiple watchers whose keys would otherwise
+  look the same.
 - `watch` - A list of etcd keys to wait watch for changes. These are
   automatically prefixed with the the value of `etcd.prefix`.
 - `context` - A list of keys whose values will be retrieved and passed to the
