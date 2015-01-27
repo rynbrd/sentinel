@@ -190,7 +190,7 @@ Loop:
 			// client library or the etcd server itself would mitigate this
 			// issue when directly connected. Either way we will retry the
 			// watch using the same index so as not to miss any changes.
-			logger.Debugf("watch timed out, retrying immediately")
+			logger.Debugf("watch on %s timed out, retrying immediately")
 		} else if err == etcd.ErrWatchStoppedByUser {
 			err = nil
 			break
