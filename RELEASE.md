@@ -1,3 +1,6 @@
+## v2.0.1
+* Handle 401 error codes from etcd.
+
 ## v2.0.0
 + More CLI options. Use -h to see them all.
 * Connectivity related bug fixes:

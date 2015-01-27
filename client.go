@@ -194,6 +194,12 @@ Loop:
 		} else if err == etcd.ErrWatchStoppedByUser {
 			err = nil
 			break
+		} else if etcdErr, ok := err.(*etcd.EtcdError); ok && etcdErr.ErrorCode == 401 {
+			// This will happen if we lose connectivity for long enough that
+			// etcd starts clearing the history. This should happen if we miss
+			// 1000 events.
+			logger.Errorf("watch on %s index %s cleared, resetting to 0")
+			waitIndex = 0
 		} else {
 			logger.Errorf("watch on %s failed, retrying in %.1f seconds", prefix, float64(retryTime)/1000)
 			logger.Debugf("error was: %s", err)
