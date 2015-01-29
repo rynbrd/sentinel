@@ -1,3 +1,6 @@
+## v2.0.2
+* Fix debug message formatting error.
+
 ## v2.0.1
 * Handle 401 error codes from etcd.
 
