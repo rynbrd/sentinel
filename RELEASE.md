@@ -1,5 +1,6 @@
 ## v2.0.2
-* Fix debug message formatting error.
+* Fix watch debug message formatting error.
+* Allow watchers to be configured without templates.
 
 ## v2.0.1
 * Handle 401 error codes from etcd.

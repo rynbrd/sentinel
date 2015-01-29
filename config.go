@@ -41,11 +41,14 @@ func ConfigSentinel(config *settings.Settings) *Sentinel {
 		watch := ResolvePaths(prefix, watcher.StringArrayDflt("watch", []string{}))
 		context := ResolvePaths(prefix, watcher.StringArrayDflt("context", []string{}))
 
+		var templates []Template
 		templatesConfig, err := watcher.ObjectArray("templates")
-		if err != nil {
-			logger.Fatalf("config '%s.templates' is invalid", watcher.Key)
+		if err != settings.KeyError {
+			if err != nil {
+				logger.Fatalf("config '%s.templates' is invalid", watcher.Key)
+			}
+			templates = ConfigTemplates(templatesConfig)
 		}
-		templates := ConfigTemplates(templatesConfig)
 
 		var command []string
 		if cmdStr, err := watcher.String("command"); err == nil {

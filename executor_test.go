@@ -83,25 +83,38 @@ func TestExecutorCommand(t *testing.T) {
 	defer tc.Close()
 	out := path.Join(tc.Directory, "out")
 
-	exec := TemplateExecutor{
-		name:    "test",
-		prefix:  "sentinel",
-		context: []string{},
-		Command: []string{"bash", "-c", "echo hello > " + out},
+	execs := []TemplateExecutor{
+		TemplateExecutor{
+			name:    "test",
+			prefix:  "sentinel",
+			context: []string{},
+			Command: []string{"bash", "-c", "echo hello > " + out},
+		},
+		TemplateExecutor{
+			name:    "test",
+			prefix:  "sentinel",
+			context: []string{},
+			Templates: []Template{},
+			Command: []string{"bash", "-c", "echo hello > " + out},
+		},
 	}
 
-	if err := exec.Execute(tc.Client); err != nil {
-		t.Errorf("failed to execute: %s", err)
-	}
-
-	want := []byte("hello\n")
-	if have, err := ioutil.ReadFile(out); err == nil {
-		t.Logf("out: %s", string(have))
-		if !reflect.DeepEqual(want, have) {
-			t.Error("command output incorrect")
+	for _, exec := range execs {
+		if err := exec.Execute(tc.Client); err != nil {
+			t.Errorf("failed to execute: %s", err)
 		}
-	} else {
-		t.Errorf("command output incorrect")
+
+		want := []byte("hello\n")
+		if have, err := ioutil.ReadFile(out); err == nil {
+			t.Logf("out: %s", string(have))
+			if !reflect.DeepEqual(want, have) {
+				t.Error("command output incorrect")
+			}
+		} else {
+			t.Errorf("command output incorrect")
+		}
+
+		os.Remove(out)
 	}
 }
 
