@@ -18,8 +18,8 @@ func TestSentinelAdd(t *testing.T) {
 	s.Add(keys1, ex1)
 	wantByName := map[string]Executor{"mock1": ex1}
 	wantByKey := map[string][]Executor{
-		"1": []Executor{ex1},
-		"2": []Executor{ex1},
+		"1": {ex1},
+		"2": {ex1},
 	}
 	if !reflect.DeepEqual(wantByName, s.executorsByName) {
 		t.Errorf("%v != %v", wantByName, s.executorsByName)
@@ -31,8 +31,8 @@ func TestSentinelAdd(t *testing.T) {
 	s.Add(keys2, ex2)
 	wantByName = map[string]Executor{"mock1": ex1, "mock2": ex2}
 	wantByKey = map[string][]Executor{
-		"1": []Executor{ex1},
-		"2": []Executor{ex1, ex2},
+		"1": {ex1},
+		"2": {ex1, ex2},
 	}
 	if !reflect.DeepEqual(wantByName, s.executorsByName) {
 		t.Errorf("%v != %v", wantByName, s.executorsByName)

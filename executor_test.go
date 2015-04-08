@@ -84,18 +84,18 @@ func TestExecutorCommand(t *testing.T) {
 	out := path.Join(tc.Directory, "out")
 
 	execs := []TemplateExecutor{
-		TemplateExecutor{
+		{
 			name:    "test",
 			prefix:  "sentinel",
 			context: []string{},
 			Command: []string{"bash", "-c", "echo hello > " + out},
 		},
-		TemplateExecutor{
-			name:    "test",
-			prefix:  "sentinel",
-			context: []string{},
+		{
+			name:      "test",
+			prefix:    "sentinel",
+			context:   []string{},
 			Templates: []Template{},
-			Command: []string{"bash", "-c", "echo hello > " + out},
+			Command:   []string{"bash", "-c", "echo hello > " + out},
 		},
 	}
 
