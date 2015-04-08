@@ -1,3 +1,6 @@
+## v2.1.0
++ Add address and URL template filters.
+
 ## v2.0.2
 * Fix watch debug message formatting error.
 * Allow watchers to be configured without templates.

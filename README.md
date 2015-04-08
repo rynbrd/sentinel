@@ -81,6 +81,23 @@ logging. See its documentation for valid target and log level values.
 - `target` - The target to log to. Defaults to `stderr`.
 - `level` - The log level. Valid values are `debug`, `info`, or `error`.
 
+Template Functions
+------------------
+A handful of template functions have been added to make configuring certain
+things easier. These are:
+
+- `addrHost` - Return the host part of a host:port formatted address.
+- `addrPort` - Return the port part of a host:port formatted address.
+- `urlScheme` - Return the scheme part of a URL.
+- `urlHost` - Return the host part of a URL. This include the :port if present.
+- `urlUsername` - Return the username part of a URL.
+- `urlPassword` - Return the password part of a URL.
+- `urlRawQuery` - Return the URL's query string.
+- `urlQuery` - Return the first value of a query key. Takes `name` as an additional parameter.
+- `urlFragment` - Return the fragment part of the URL.
+
+All functions return an empty string on error.
+
 Beacon Example
 --------------
 [Beacon][2] discovers services running in Docker and registers them in etcd.

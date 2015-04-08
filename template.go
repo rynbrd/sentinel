@@ -54,7 +54,17 @@ func (t *Template) Render(context map[string]interface{}) (changed bool, err err
 
 	// add functions to the templates
 	funcs := template.FuncMap{
-		"replace": strings.Replace,
+		"replace":     strings.Replace,
+		"addrHost":    AddrHost,
+		"addrPort":    AddrPort,
+		"urlScheme":   URLScheme,
+		"urlUsername": URLUsername,
+		"urlPassword": URLPassword,
+		"urlHost":     URLHost,
+		"urlPath":     URLPath,
+		"urlRawQuery": URLRawQuery,
+		"urlQuery":    URLQuery,
+		"urlFragment": URLFragment,
 	}
 
 	// render the template to the temp file
