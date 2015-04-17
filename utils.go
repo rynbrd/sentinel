@@ -14,14 +14,25 @@ func Fatalf(format string, a ...interface{}) {
 
 // Join multiple key paths into one. The resulting path will be absolute.
 func JoinPath(paths ...string) string {
-	path := ""
-	for _, part := range paths {
-		part = strings.Trim(part, "/")
-		if part != "" {
-			path = path + "/" + part
+	parts := []string{}
+	for _, path := range paths {
+		path = CleanPath(path)
+		if path != "" {
+			parts = append(parts, path)
 		}
 	}
-	return strings.Trim(path, "/")
+	return strings.Join(parts, "/")
+}
+
+// CleanPath removes leading, trailing, and duplicate slashes.
+func CleanPath(path string) string {
+	parts := []string{}
+	for _, part := range strings.Split(path, "/") {
+		if part != "" {
+			parts = append(parts, part)
+		}
+	}
+	return strings.Join(parts, "/")
 }
 
 // Join the `prefix` to the list of `keys` and return the result.

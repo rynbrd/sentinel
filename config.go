@@ -37,7 +37,7 @@ func ConfigSentinel(config *settings.Settings) *Sentinel {
 	}
 
 	for name, watcher := range watchers {
-		prefix := watcher.StringDflt("prefix", "")
+		prefix := CleanPath(watcher.StringDflt("prefix", ""))
 		watch := ResolvePaths(prefix, watcher.StringArrayDflt("watch", []string{}))
 		context := ResolvePaths(prefix, watcher.StringArrayDflt("context", []string{}))
 
