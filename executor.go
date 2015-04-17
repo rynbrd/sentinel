@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 )
@@ -28,7 +27,7 @@ type TemplateExecutor struct {
 }
 
 // Render the templates. Return true if any templates changed.
-func (ex *TemplateExecutor) render(context map[string]interface{}) (changed bool, err error) {
+func (ex *TemplateExecutor) render(context interface{}) (changed bool, err error) {
 	var oneChanged bool
 	if ex.Templates == nil || len(ex.Templates) == 0 {
 		logger.Debugf("%s: no templates to render", ex.name)
@@ -36,6 +35,7 @@ func (ex *TemplateExecutor) render(context map[string]interface{}) (changed bool
 		return
 	}
 
+	logger.Debugf("%s: context %+v", ex.name, context)
 	for _, tpl := range ex.Templates {
 		if oneChanged, err = tpl.Render(context); err != nil {
 			return
@@ -91,7 +91,7 @@ func (ex *TemplateExecutor) Name() string {
 // destinations changes or no templates are present in the Watcher.
 func (ex *TemplateExecutor) Execute(client Client) error {
 	var err error
-	var context map[string]interface{}
+	var context interface{}
 
 	logger.Debugf("%s: executing", ex.name)
 	if ex.context == nil || len(ex.context) == 0 {
@@ -101,13 +101,15 @@ func (ex *TemplateExecutor) Execute(client Client) error {
 		return err
 	} else {
 		for _, key := range strings.Split(ex.prefix, "/") {
-			next, ok := context[key]
-			if !ok {
+			if contextMap, ok := context.(map[string]interface{}); ok {
+				context, ok = contextMap[key]
+				if !ok {
+					context = map[string]interface{}{}
+					break
+				}
+			} else {
+				context = map[string]interface{}{}
 				break
-			}
-			context, ok = next.(map[string]interface{})
-			if !ok {
-				return fmt.Errorf("%s: context is invalid", ex.name)
 			}
 		}
 	}

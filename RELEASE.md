@@ -1,6 +1,7 @@
 ## v2.1.1
 * Set default config file to /etc/sentinel.yml.
 * Bug fix: Allow prefixes with a leading or trailing slash.
++ Allow single keys as context.
 + Add JSON template filter.
 
 ## v2.1.0

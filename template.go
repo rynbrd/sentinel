@@ -32,7 +32,7 @@ func (t *Template) differs(fileA, fileB string) bool {
 }
 
 // Render the template to a temporary and return true if the original was changed.
-func (t *Template) Render(context map[string]interface{}) (changed bool, err error) {
+func (t *Template) Render(context interface{}) (changed bool, err error) {
 	// create the destination directory
 	dir := filepath.Dir(t.Dest)
 	if err = os.MkdirAll(dir, 0777); err != nil {

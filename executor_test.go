@@ -215,6 +215,38 @@ func TestExecutorMissingContext(t *testing.T) {
 	}
 }
 
+func TestExecutorValueContext(t *testing.T) {
+	tc := NewExecutorTestCase(t)
+	defer tc.Close()
+
+	exec := TemplateExecutor{
+		name:      "test",
+		prefix:    "sentinel/context_a/value",
+		context:   []string{"/"},
+		Templates: []Template{tc.Template},
+	}
+
+	var err error
+	src := []byte("{{ . }}")
+	dest := []byte("a")
+	if err = ioutil.WriteFile(tc.Template.Src, src, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := exec.Execute(tc.Client); err != nil {
+		t.Errorf("failed to execute: %s", err)
+	}
+	if have, err := ioutil.ReadFile(tc.Template.Dest); err == nil {
+		if !reflect.DeepEqual(dest, have) {
+			t.Error("template destination incorrectly rendered")
+			t.Errorf("  want: %s", dest)
+			t.Errorf("  have: %s", have)
+		}
+	} else {
+		t.Errorf("template destination not rendered: %s", err)
+	}
+}
+
 func TestExecutorChanged(t *testing.T) {
 	tc := NewExecutorTestCase(t)
 	defer tc.Close()
