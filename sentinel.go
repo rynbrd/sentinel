@@ -1,10 +1,5 @@
 package main
 
-import (
-	"fmt"
-	"strings"
-)
-
 type Sentinel struct {
 	Client          Client
 	executorsByName map[string]Executor
@@ -33,19 +28,12 @@ func (s *Sentinel) Add(keys []string, executor Executor) {
 }
 
 // Look up a executors by key and execute them.
-func (s *Sentinel) executeKey(key string) []error {
-	executors, ok := s.executorsByKey[key]
-	if !ok {
-		return []error{}
-	}
-
-	errors := make([]error, 0)
-	for _, executor := range executors {
-		if err := executor.Execute(s.Client); err != nil {
-			errors = append(errors, err)
+func (s *Sentinel) executeKey(key string) {
+	if executors, ok := s.executorsByKey[key]; ok {
+		for _, executor := range executors {
+			executor.Execute(s.Client)
 		}
 	}
-	return errors
 }
 
 // Get the prefixes we're configured to watch.
@@ -58,33 +46,33 @@ func (s *Sentinel) getPrefixes() []string {
 }
 
 // Execute the named executors. If `names` is empty all executors will be run.
-// A failed executor will not cause subsequent executors to be skipped. Return
-// an error on failure.
-func (s *Sentinel) Execute(names []string) error {
-	failed := []string{}
+// A failed executor will not cause subsequent executors to be skipped.
+// Failures are logged. Return true if all executors succeeded.
+func (s *Sentinel) Execute(names []string) bool {
+	success := true
 	if len(names) == 0 {
 		for _, executor := range s.executorsByName {
-			if executor.Execute(s.Client) != nil {
-				failed = append(failed, executor.Name())
+			if err := executor.Execute(s.Client); err != nil {
+				logger.Errorf("executor %s failed: %s", executor.Name(), err)
+				success = false
 			}
 		}
 	} else {
 		for _, name := range names {
 			if _, ok := s.executorsByName[name]; !ok {
-				return fmt.Errorf("executor %s not found", name)
+				logger.Errorf("executor %s not found", name)
+				return false
 			}
 		}
 		for _, name := range names {
 			executor := s.executorsByName[name]
-			if executor.Execute(s.Client) != nil {
-				failed = append(failed, executor.Name())
+			if err := executor.Execute(s.Client); err != nil {
+				logger.Errorf("executor %s failed: %s", executor.Name(), err)
+				success = false
 			}
 		}
 	}
-	if len(failed) > 0 {
-		return fmt.Errorf("executors failed: %s", strings.Join(failed, ", "))
-	}
-	return nil
+	return success
 }
 
 func (s *Sentinel) Run(stop chan bool) {
@@ -105,11 +93,7 @@ Loop:
 			break Loop
 		case prefix := <-changes:
 			logger.Debugf("prefix '%s' changed", prefix)
-			if errs := s.executeKey(prefix); len(errs) > 0 {
-				for _, err := range errs {
-					logger.Error(err.Error())
-				}
-			}
+			s.executeKey(prefix)
 		}
 	}
 }

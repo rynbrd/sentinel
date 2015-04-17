@@ -52,8 +52,8 @@ func TestSentinelExecute(t *testing.T) {
 	s.Add(keys1, ex1)
 	s.Add(keys2, ex2)
 
-	if err := s.Execute([]string{"mock1"}); err != nil {
-		t.Error(err)
+	if !s.Execute([]string{"mock1"}) {
+		t.Error("an executor failed")
 	}
 	if ex1.Calls != 1 {
 		t.Error("executor not called")
@@ -62,8 +62,8 @@ func TestSentinelExecute(t *testing.T) {
 		t.Error("executor was called")
 	}
 
-	if err := s.Execute([]string{"mock1", "mock2"}); err != nil {
-		t.Error(err)
+	if !s.Execute([]string{"mock1", "mock2"}) {
+		t.Error("an executor failed")
 	}
 	if ex1.Calls != 2 {
 		t.Error("executor not called")
@@ -73,8 +73,8 @@ func TestSentinelExecute(t *testing.T) {
 	}
 
 	ex1.Error = errors.New("oops!")
-	if err := s.Execute([]string{"mock1", "mock2"}); err == nil {
-		t.Error("no error returned")
+	if s.Execute([]string{"mock1", "mock2"}) {
+		t.Error("execute succeeded")
 	}
 	if ex1.Calls != 3 {
 		t.Error("executor not called")
@@ -84,8 +84,8 @@ func TestSentinelExecute(t *testing.T) {
 	}
 
 	ex1.Error = nil
-	if err := s.Execute([]string{}); err != nil {
-		t.Error(err)
+	if !s.Execute([]string{}) {
+		t.Error("an executor failed")
 	}
 	if ex1.Calls != 4 {
 		t.Error("executor not called")
@@ -94,8 +94,8 @@ func TestSentinelExecute(t *testing.T) {
 		t.Error("executor not called")
 	}
 
-	if err := s.Execute([]string{"sirnotappearinginthisfilm"}); err == nil {
-		t.Error("no error returned")
+	if s.Execute([]string{"sirnotappearinginthisfilm"}) {
+		t.Error("execute succeeded")
 	}
 	if ex1.Calls != 4 {
 		t.Error("executor called")
@@ -116,9 +116,7 @@ func TestSentinelExecuteKey(t *testing.T) {
 	s.Add(keys1, ex1)
 	s.Add(keys2, ex2)
 
-	if errs := s.executeKey("1"); len(errs) != 0 {
-		t.Error(errs)
-	}
+	s.executeKey("1")
 	if ex1.Calls != 1 {
 		t.Error("executor1 not called")
 	}
@@ -126,9 +124,7 @@ func TestSentinelExecuteKey(t *testing.T) {
 		t.Error("executor2 called")
 	}
 
-	if errs := s.executeKey("2"); len(errs) != 1 {
-		t.Error(errs)
-	}
+	s.executeKey("2")
 	if ex1.Calls != 2 {
 		t.Error("executor1 not called")
 	}
