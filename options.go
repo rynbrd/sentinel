@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var DefaultConfigFile string = "config.yml"
+var DefaultConfigFile string = "/etc/sentinel.yml"
 
 // A string array option capable of being appended to.
 type stringsOpt []string

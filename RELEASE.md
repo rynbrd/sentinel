@@ -1,3 +1,6 @@
+## v2.1.1
+* Set default config file to /etc/sentinel.yml.
+
 ## v2.1.0
 + Add address and URL template filters.
 
