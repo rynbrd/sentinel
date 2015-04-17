@@ -177,7 +177,36 @@ func TestExecutorMultiContext(t *testing.T) {
 		t.Errorf("failed to execute: %s", err)
 	}
 	if have, err := ioutil.ReadFile(tc.Template.Dest); err == nil {
-		t.Log(string(have))
+		if !reflect.DeepEqual(dest, have) {
+			t.Error("template destination incorrectly rendered")
+		}
+	} else {
+		t.Errorf("template destination not rendered: %s", err)
+	}
+}
+
+func TestExecutorMissingContext(t *testing.T) {
+	tc := NewExecutorTestCase(t)
+	defer tc.Close()
+
+	exec := TemplateExecutor{
+		name:      "test",
+		prefix:    "sentinel",
+		context:   []string{"test"},
+		Templates: []Template{tc.Template},
+	}
+
+	var err error
+	src := []byte("{{ range $key, $value := .test }}{{ $key }}={{ $value }}\n{{ end }}")
+	dest := []byte("")
+	if err = ioutil.WriteFile(tc.Template.Src, src, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := exec.Execute(tc.Client); err != nil {
+		t.Errorf("failed to execute: %s", err)
+	}
+	if have, err := ioutil.ReadFile(tc.Template.Dest); err == nil {
 		if !reflect.DeepEqual(dest, have) {
 			t.Error("template destination incorrectly rendered")
 		}
