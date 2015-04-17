@@ -1,6 +1,7 @@
 ## v2.1.1
 * Set default config file to /etc/sentinel.yml.
 * Bug fix: Allow prefixes with a leading or trailing slash.
+* Force etcd v0.4 compatibility.
 + Allow single keys as context.
 + Log template errors on failure.
 + Add JSON template filter.
