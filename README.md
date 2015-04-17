@@ -95,6 +95,7 @@ things easier. These are:
 - `urlRawQuery` - Return the URL's query string.
 - `urlQuery` - Return the first value of a query key. Takes `name` as an additional parameter.
 - `urlFragment` - Return the fragment part of the URL.
+- `json` - Unmarshal a value into a JSON map or array.
 
 All functions return an empty string on error.
 

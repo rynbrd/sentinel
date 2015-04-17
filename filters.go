@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"io"
 	"net/url"
 	"strings"
 )
@@ -97,4 +100,22 @@ func URLFragment(u string) string {
 		return parsed.Fragment
 	}
 	return ""
+}
+
+// JSON parses the JSON value `item` and returns it.
+func JSON(item interface{}) (interface{}, error) {
+	var err error
+	var data interface{}
+	switch item.(type) {
+	case []byte:
+		err = json.Unmarshal(item.([]byte), &data)
+	case string:
+		err = json.Unmarshal([]byte(item.(string)), &data)
+	case io.Reader:
+		dec := json.NewDecoder(item.(io.Reader))
+		err = dec.Decode(&data)
+	default:
+		err = errors.New("item must be string or byte array")
+	}
+	return data, err
 }
