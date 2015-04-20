@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/BlueDragonX/go-etcd/etcd"
+	"github.com/coreos/go-etcd/etcd"
 	"github.com/peterbourgon/mergemap"
 	"gopkg.in/BlueDragonX/go-settings.v0"
 	"strings"

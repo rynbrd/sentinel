@@ -6,7 +6,6 @@ go:
 before_install:
 - git clone https://github.com/coreos/etcd.git /tmp/etcd
 - cd /tmp/etcd
-- git checkout release-0.4
 - ./build
 - ./bin/etcd &
 - cd -
