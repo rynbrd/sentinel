@@ -52,8 +52,12 @@ func configure() *settings.Settings {
 	if prefix := config.StringDflt("etcd.prefix", ""); prefix != "" {
 		for _, watcher := range config.ObjectMapDflt("watchers", map[string]*settings.Settings{}) {
 			if watcherPrefix, err := watcher.String("prefix"); err == nil {
-				watcher.Set("prefix", JoinPath(prefix, watcherPrefix))
+				newWatcherPrefix := JoinPath(prefix, watcherPrefix)
+				logger.Debugf("change %s prefix %s to %s", watcher.Key, watcherPrefix, newWatcherPrefix)
+				watcher.Set("prefix", newWatcherPrefix)
 			} else {
+				logger.Debugf("get error: %s", err)
+				logger.Debugf("set %s prefix to %s", watcher.Key, newWatcherPrefix)
 				watcher.Set("prefix", prefix)
 			}
 		}
