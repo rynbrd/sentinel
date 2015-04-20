@@ -57,7 +57,7 @@ func configure() *settings.Settings {
 				watcher.Set("prefix", newWatcherPrefix)
 			} else {
 				logger.Debugf("get error: %s", err)
-				logger.Debugf("set %s prefix to %s", watcher.Key, newWatcherPrefix)
+				logger.Debugf("set %s prefix to %s", watcher.Key, prefix)
 				watcher.Set("prefix", prefix)
 			}
 		}
