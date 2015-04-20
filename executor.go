@@ -93,16 +93,18 @@ func (ex *TemplateExecutor) Execute(client Client) error {
 	var err error
 	var context interface{}
 
-	logger.Debugf("%s: executing", ex.name)
+	logger.Debugf("%s: executing with prefix %s", ex.name, ex.prefix)
 	if ex.context == nil || len(ex.context) == 0 {
 		context = map[string]interface{}{}
 	} else if context, err = client.Get(ex.context); err != nil {
 		logger.Errorf("%s: context get failed: %s", ex.name, err)
 		return err
 	} else {
+		logger.Debugf("%s: parent context: %+v", ex.name, context)
 		for _, key := range strings.Split(ex.prefix, "/") {
 			if contextMap, ok := context.(map[string]interface{}); ok {
 				context, ok = contextMap[key]
+				logger.Debugf("%s: enter context: %+v", ex.name, context)
 				if !ok {
 					context = map[string]interface{}{}
 					break
