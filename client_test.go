@@ -178,16 +178,8 @@ func TestEtcdClientGet(t *testing.T) {
 
 // Ensure the client returns properly when get fails.
 func TestEtcdClientGetFailure(t *testing.T) {
-	// server down should return an error
-	client := getEtcdClient(t, invalidURI)
-	if value, err := client.Get([]string{"test/values"}); err == nil {
-		t.Errorf("received a value from etcd: %v", value)
-	} else {
-		t.Logf("received %v: %v", reflect.TypeOf(err), err)
-	}
-
 	// missing key should return an empty map
-	client = getEtcdClient(t, validURI)
+	client := getEtcdClient(t, validURI)
 	if value, err := client.Get([]string{"test/values"}); err == nil {
 		t.Logf("received a value from etcd: %v", value)
 	} else {
