@@ -61,6 +61,8 @@ func configure() *settings.Settings {
 				watcher.Set("prefix", prefix)
 			}
 		}
+	} else {
+		logger.Debugf("no changes made to watcher prefixes")
 	}
 
 	return config
