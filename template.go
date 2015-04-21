@@ -65,6 +65,7 @@ func (t *Template) Render(context interface{}) (changed bool, err error) {
 		"urlRawQuery": URLRawQuery,
 		"urlQuery":    URLQuery,
 		"urlFragment": URLFragment,
+		"json":        JSON,
 	}
 
 	// render the template to the temp file

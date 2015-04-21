@@ -1,3 +1,6 @@
+## v2.1.3
+* Fix JSON template function.
+
 ## v2.1.2
 * Unpin go-etcd library.
 
