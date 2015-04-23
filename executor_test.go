@@ -221,7 +221,7 @@ func TestExecutorValueContext(t *testing.T) {
 
 	exec := TemplateExecutor{
 		name:      "test",
-		prefix:    "sentinel/context_a/value",
+		prefix:    "sentinel/context-a/value",
 		context:   []string{"/"},
 		Templates: []Template{tc.Template},
 	}

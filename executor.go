@@ -102,7 +102,7 @@ func (ex *TemplateExecutor) Execute(client Client) error {
 	} else {
 		for _, key := range strings.Split(ex.prefix, "/") {
 			if contextMap, ok := context.(map[string]interface{}); ok {
-				context, ok = contextMap[key]
+				context, ok = contextMap[getKeyName(key)]
 				if !ok {
 					context = map[string]interface{}{}
 					break

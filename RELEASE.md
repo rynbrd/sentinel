@@ -1,3 +1,6 @@
+## v2.1.4
+* Fix dashes (-) in prefix breaking template context.
+
 ## v2.1.3
 * Fix JSON template function.
 
