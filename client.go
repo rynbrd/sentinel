@@ -184,12 +184,13 @@ Loop:
 			changes <- prefix
 		} else if _, ok := err.(*json.SyntaxError); ok {
 			// This is caused by the connection timing out thus cutting the
-			// stream the JSON encoder is readong from. I would expect this to
+			// stream the JSON encoder is reading from. I would expect this to
 			// be common on HTTP long-pulls especially if a proxy is involved.
 			// On the other hand I am unsure whether changes to the go-etcd
 			// client library or the etcd server itself would mitigate this
 			// issue when directly connected. Either way we will retry the
 			// watch using the same index so as not to miss any changes.
+			retryTime = retrySeed
 			logger.Debugf("watch on %s timed out, retrying immediately", prefix)
 		} else if err == etcd.ErrWatchStoppedByUser {
 			err = nil
@@ -198,8 +199,9 @@ Loop:
 			// This will happen if we lose connectivity for long enough that
 			// etcd starts clearing the history. This should happen if we miss
 			// 1000 events.
-			logger.Errorf("watch on %s index %s cleared, resetting to 0")
+			retryTime = retrySeed
 			waitIndex = 0
+			logger.Errorf("watch on %s index %s cleared, reset to 0")
 		} else {
 			logger.Errorf("watch on %s failed, retrying in %.1f seconds", prefix, float64(retryTime)/1000)
 			logger.Debugf("error was: %s", err)

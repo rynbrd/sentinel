@@ -217,7 +217,7 @@ func TestEtcdClientWatch(t *testing.T) {
 	<-join
 }
 
-// Ensure we URIs with and without trailing slashes work.
+// Ensure URIs with and without trailing slashes work.
 func TestEtcdClientTrailingSlash(t *testing.T) {
 	client := getEtcdClient(t, validURI)
 	etcdClientSetUp(t, client.client)

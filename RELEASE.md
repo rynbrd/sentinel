@@ -1,3 +1,6 @@
+## v2.1.5
+* Fix reset of watch backoff timer.
+
 ## v2.1.4
 * Fix dashes (-) in prefix breaking template context.
 
