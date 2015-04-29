@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/peterbourgon/mergemap"
-	"gopkg.in/BlueDragonX/go-settings.v0"
+	"gopkg.in/BlueDragonX/go-settings.v1"
 	"strings"
 	"time"
 )

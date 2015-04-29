@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/coreos/go-etcd/etcd"
-	"gopkg.in/BlueDragonX/go-settings.v0"
+	"gopkg.in/BlueDragonX/go-settings.v1"
 	"io/ioutil"
 	"net/http"
 	"reflect"

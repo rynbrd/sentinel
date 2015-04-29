@@ -2,7 +2,7 @@ package main
 
 import (
 	"gopkg.in/BlueDragonX/go-log.v0"
-	"gopkg.in/BlueDragonX/go-settings.v0"
+	"gopkg.in/BlueDragonX/go-settings.v1"
 	"os"
 	"os/signal"
 	"syscall"
