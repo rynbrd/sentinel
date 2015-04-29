@@ -1,5 +1,7 @@
 ## v2.1.5
 * Fix reset of watch backoff timer.
++ Enable debug logging for go-etcd.
+* Use stable go-log and go-settings.
 
 ## v2.1.4
 * Fix dashes (-) in prefix breaking template context.

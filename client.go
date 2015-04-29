@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"github.com/coreos/go-etcd/etcd"
 	"github.com/peterbourgon/mergemap"
+	"gopkg.in/BlueDragonX/go-log.v1"
 	"gopkg.in/BlueDragonX/go-settings.v1"
+	stdlog "log"
 	"strings"
 	"time"
 )
@@ -254,4 +256,10 @@ func (c *EtcdClient) Watch(prefixes []string, changes chan string, stop chan boo
 		case <-time.After(200 * time.Millisecond):
 		}
 	}
+}
+
+func init() {
+	logWriter := log.NewWriter(log.LevelDebug, logger)
+	etcdLogger := stdlog.New(logWriter, "go-etcd: ", 0)
+	etcd.SetLogger(etcdLogger)
 }

@@ -2,10 +2,15 @@ package main
 
 import (
 	"errors"
+	"gopkg.in/BlueDragonX/go-log.v1"
 	"reflect"
 	"testing"
 	"time"
 )
+
+func init() {
+	logger.SetLevel(log.LevelDebug)
+}
 
 func TestSentinelAdd(t *testing.T) {
 	client := &MockClient{}
