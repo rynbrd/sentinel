@@ -1,3 +1,7 @@
+## v2.1.6
++ Use make for builds and tests.
+* Fix issues found by govet.
+
 ## v2.1.5
 * Fix reset of watch backoff timer.
 + Enable debug logging for go-etcd.
