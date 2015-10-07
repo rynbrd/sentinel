@@ -211,7 +211,7 @@ func TestEtcdClientWatch(t *testing.T) {
 	if key := <-changes; key != "test/index" {
 		t.Errorf("changed key is '%s' not 'test/index'", key)
 	} else {
-		t.Log("changed key is '%s'\n", key)
+		t.Logf("changed key is '%s'\n", key)
 	}
 	stop <- true
 	<-join

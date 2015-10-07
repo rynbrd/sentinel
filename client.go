@@ -202,8 +202,8 @@ Loop:
 			// etcd starts clearing the history. This should happen if we miss
 			// 1000 events.
 			retryTime = retrySeed
+			logger.Errorf("watch on %s index %d cleared, reset to 0", prefix, waitIndex)
 			waitIndex = 0
-			logger.Errorf("watch on %s index %s cleared, reset to 0")
 		} else {
 			logger.Errorf("watch on %s failed, retrying in %.1f seconds", prefix, float64(retryTime)/1000)
 			logger.Debugf("error was: %s", err)
