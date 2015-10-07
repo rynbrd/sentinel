@@ -1,6 +1,14 @@
 language: go
 sudo: false
 
+before_install:
+- git clone https://github.com/coreos/etcd.git /tmp/etcd
+- cd /tmp/etcd
+- ./build
+- ./bin/etcd &
+- cd -
+- sleep 1
+
 script:
 - make test
 - make
